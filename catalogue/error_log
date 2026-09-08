@@ -1,0 +1,5 @@
+[07-Jul-2026 09:53:41 Europe/Berlin] Default exception handler: Sorry, but you do not currently have permissions to do that (Access program catalogue). Debug: 
+Error code: nopermissions
+* line 875 of /lib/accesslib.php: required_capability_exception thrown
+* line 43 of /enrol/programs/catalogue/program.php: call to require_capability()
+
