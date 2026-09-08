@@ -479,6 +479,46 @@ final class allocation {
         }
         $rs->close();
 
+        // Disable all active enrolments for student choice sets where course was not selected.
+        $params = ['active' => ENROL_USER_ACTIVE];
+        $programselect = '';
+        if ($programid) {
+            $programselect = "AND pi.programid = :programid";
+            $params['programid'] = $programid;
+        }
+        $userselect = '';
+        if ($userid) {
+            $userselect = "AND ue.userid = :userid";
+            $params['userid'] = $userid;
+        }
+        $params['seqpattern'] = '%' . set::SEQUENCE_TYPE_STUDENTCHOICE . '%';
+        $sql = "SELECT e.*, ue.userid
+                  FROM {user_enrolments} ue
+                  JOIN {enrol} e ON e.id = ue.enrolid AND e.enrol = 'programs'
+                  JOIN {enrol_programs_items} pi ON pi.courseid = e.courseid AND pi.programid = e.customint1
+                  JOIN {enrol_programs_allocations} pa ON pa.programid = pi.programid AND pa.userid = ue.userid
+                  JOIN {enrol_programs_prerequisites} pr ON pr.prerequisiteitemid = pi.id
+                  JOIN {enrol_programs_items} parentset ON parentset.id = pr.itemid
+             LEFT JOIN {enrol_programs_selections} sel ON sel.allocationid = pa.id AND sel.courseitemid = pi.id
+                 WHERE ue.status = :active
+                       AND " . $DB->sql_like('parentset.sequencejson', ':seqpattern') . "
+                       AND sel.id IS NULL
+                       $programselect $userselect
+              ORDER BY e.id ASC, ue.id ASC";
+        $rs = $DB->get_recordset_sql($sql, $params);
+        foreach ($rs as $enrol) {
+            $puserid = $enrol->userid;
+            unset($enrol->userid);
+            $plugin->update_user_enrol($enrol, $puserid, ENROL_USER_SUSPENDED);
+            $context = \context_course::instance($enrol->courseid);
+            role_unassign_all([
+                'contextid' => $context->id,
+                'component' => 'enrol_programs',
+                'itemid' => $enrol->id,
+            ]);
+        }
+        $rs->close();
+
         // Copy completion date from other evidences if item not completed yet.
         $params = [];
         $programselect = '';
@@ -609,6 +649,7 @@ final class allocation {
         $now = time();
         $params['now1'] = $now;
         $params['now2'] = $now;
+        $params['seqpattern'] = '%' . set::SEQUENCE_TYPE_STUDENTCHOICE . '%';
         $sql = "SELECT e.*, pa.userid
                   FROM {user_enrolments} ue
                   JOIN {enrol} e ON e.enrol = 'programs' AND e.id = ue.enrolid
@@ -617,8 +658,12 @@ final class allocation {
                   JOIN {enrol_programs_programs} p ON p.id = pa.programid
              LEFT JOIN {enrol_programs_items} previ ON previ.programid = p.id AND previ.id = pi.previtemid
              LEFT JOIN {enrol_programs_completions} previc ON previc.itemid = previ.id AND previc.allocationid = pa.id
+             LEFT JOIN {enrol_programs_prerequisites} pr ON pr.prerequisiteitemid = pi.id
+             LEFT JOIN {enrol_programs_items} parentset ON parentset.id = pr.itemid
+             LEFT JOIN {enrol_programs_selections} sel ON sel.allocationid = pa.id AND sel.courseitemid = pi.id
                  WHERE ue.status = :suspended
                        AND (pi.previtemid IS NULL OR previc.timecompleted IS NOT NULL)
+                       AND (parentset.id IS NULL OR " . $DB->sql_like('parentset.sequencejson', ':seqpattern', true, true, true) . " OR sel.id IS NOT NULL)
                        AND p.archived = 0 AND pa.archived = 0
                        AND (pa.timestart IS NULL OR pa.timestart <= :now1)
                        AND (pa.timeend IS NULL OR pa.timeend > :now2)
@@ -1158,4 +1203,145 @@ final class allocation {
         }
         $upt->track('enrolments', get_string('userupload_completion_updated', 'enrol_programs', $programname), 'info');
     }
+
+    /**
+     * Get user course selections for a set item.
+     *
+     * @param int $allocationid
+     * @param int $setitemid
+     * @return stdClass[] indexed by courseitemid
+     */
+    public static function get_user_selections(int $allocationid, int $setitemid): array {
+        global $DB;
+
+        return $DB->get_records('enrol_programs_selections', [
+            'allocationid' => $allocationid,
+            'setitemid' => $setitemid,
+        ], 'timeselected ASC', 'courseitemid, id, allocationid, setitemid, timeselected, selectedby');
+    }
+
+    /**
+     * Check if a student choice set is unlocked for selection by the user.
+     *
+     * @param int $allocationid
+     * @param int $setitemid
+     * @return bool
+     */
+    public static function is_set_unlocked_for_selection(int $allocationid, int $setitemid): bool {
+        global $DB;
+
+        $allocation = $DB->get_record('enrol_programs_allocations', ['id' => $allocationid], '*', MUST_EXIST);
+        if ($allocation->archived) {
+            return false;
+        }
+        $now = time();
+        if ($allocation->timestart && $allocation->timestart > $now) {
+            return false;
+        }
+        if ($allocation->timeend && $allocation->timeend <= $now) {
+            return false;
+        }
+
+        $children = $DB->get_records_sql(
+            "SELECT pi.*
+               FROM {enrol_programs_items} pi
+               JOIN {enrol_programs_prerequisites} pr ON pr.prerequisiteitemid = pi.id
+              WHERE pr.itemid = :setitemid",
+            ['setitemid' => $setitemid]
+        );
+
+        if (!$children) {
+            return false;
+        }
+
+        foreach ($children as $child) {
+            if ($child->previtemid) {
+                $completed = $DB->record_exists('enrol_programs_completions', [
+                    'itemid' => $child->previtemid,
+                    'allocationid' => $allocationid,
+                ]);
+                if (!$completed) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Save user course selections for a set item.
+     *
+     * @param int $allocationid
+     * @param int $setitemid
+     * @param int[] $courseitemids
+     * @param int $selectedby
+     * @return void
+     */
+    public static function save_user_selections(int $allocationid, int $setitemid, array $courseitemids, int $selectedby): void {
+        global $DB;
+
+        $allocation = $DB->get_record('enrol_programs_allocations', ['id' => $allocationid], '*', MUST_EXIST);
+        $setitem = $DB->get_record('enrol_programs_items', ['id' => $setitemid, 'programid' => $allocation->programid], '*', MUST_EXIST);
+
+        $sequence = (object)json_decode($setitem->sequencejson);
+        if ($sequence->type !== set::SEQUENCE_TYPE_STUDENTCHOICE) {
+            throw new \coding_exception('Target set is not a student choice set');
+        }
+
+        $validchildren = (array)($sequence->children ?? []);
+        $courseitemids = array_unique(array_map('intval', $courseitemids));
+        foreach ($courseitemids as $cid) {
+            if (!in_array($cid, $validchildren)) {
+                throw new \moodle_exception('errorinvalidcourse', 'enrol_programs');
+            }
+        }
+
+        if (count($courseitemids) != $setitem->minprerequisites) {
+            throw new \moodle_exception('errorselectexactcount', 'enrol_programs', '', $setitem->minprerequisites);
+        }
+
+        $trans = $DB->start_delegated_transaction();
+
+        $DB->delete_records('enrol_programs_selections', [
+            'allocationid' => $allocationid,
+            'setitemid' => $setitemid,
+        ]);
+
+        $now = time();
+        foreach ($courseitemids as $cid) {
+            $record = new stdClass();
+            $record->allocationid = $allocationid;
+            $record->setitemid = $setitemid;
+            $record->courseitemid = $cid;
+            $record->timeselected = $now;
+            $record->selectedby = $selectedby;
+            $DB->insert_record('enrol_programs_selections', $record);
+        }
+
+        $trans->allow_commit();
+
+        self::fix_user_enrolments($allocation->programid, $allocation->userid);
+    }
+
+    /**
+     * Reset user course selections for a set item.
+     *
+     * @param int $allocationid
+     * @param int $setitemid
+     * @return void
+     */
+    public static function reset_user_selections(int $allocationid, int $setitemid): void {
+        global $DB;
+
+        $allocation = $DB->get_record('enrol_programs_allocations', ['id' => $allocationid], '*', MUST_EXIST);
+
+        $DB->delete_records('enrol_programs_selections', [
+            'allocationid' => $allocationid,
+            'setitemid' => $setitemid,
+        ]);
+
+        self::fix_user_enrolments($allocation->programid, $allocation->userid);
+    }
 }
+

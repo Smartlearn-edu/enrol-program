@@ -216,5 +216,37 @@ function xmldb_enrol_programs_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2023051400, 'enrol', 'programs');
     }
 
+    if ($oldversion < 2023051505) {
+        // Define table enrol_programs_selections to be created.
+        $table = new xmldb_table('enrol_programs_selections');
+
+        // Adding fields to table enrol_programs_selections.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('allocationid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('setitemid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('courseitemid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timeselected', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('selectedby', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        // Adding keys to table enrol_programs_selections.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('allocationid', XMLDB_KEY_FOREIGN, ['allocationid'], 'enrol_programs_allocations', ['id']);
+        $table->add_key('setitemid', XMLDB_KEY_FOREIGN, ['setitemid'], 'enrol_programs_items', ['id']);
+        $table->add_key('courseitemid', XMLDB_KEY_FOREIGN, ['courseitemid'], 'enrol_programs_items', ['id']);
+        $table->add_key('selectedby', XMLDB_KEY_FOREIGN, ['selectedby'], 'user', ['id']);
+
+        // Adding indexes to table enrol_programs_selections.
+        $table->add_index('allocationid-courseitemid', XMLDB_INDEX_UNIQUE, ['allocationid', 'courseitemid']);
+        $table->add_index('allocationid-setitemid', XMLDB_INDEX_NOTUNIQUE, ['allocationid', 'setitemid']);
+
+        // Conditionally launch create table for enrol_programs_selections.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Programs savepoint reached.
+        upgrade_plugin_savepoint(true, 2023051505, 'enrol', 'programs');
+    }
+
     return true;
 }

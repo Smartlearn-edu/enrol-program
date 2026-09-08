@@ -313,6 +313,26 @@
       <INDEXES>
         <INDEX NAME="sourceid-cohortid" UNIQUE="true" FIELDS="sourceid, cohortid"/>
       </INDEXES>
+    <TABLE NAME="enrol_programs_selections" COMMENT="Course selections made by users for student choice sets">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="allocationid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Allocation ID"/>
+        <FIELD NAME="setitemid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Set item ID"/>
+        <FIELD NAME="courseitemid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Course item ID"/>
+        <FIELD NAME="timeselected" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Time of selection"/>
+        <FIELD NAME="selectedby" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="User who made the selection"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="allocationid" TYPE="foreign" FIELDS="allocationid" REFTABLE="enrol_programs_allocations" REFFIELDS="id"/>
+        <KEY NAME="setitemid" TYPE="foreign" FIELDS="setitemid" REFTABLE="enrol_programs_items" REFFIELDS="id"/>
+        <KEY NAME="courseitemid" TYPE="foreign" FIELDS="courseitemid" REFTABLE="enrol_programs_items" REFFIELDS="id"/>
+        <KEY NAME="selectedby" TYPE="foreign" FIELDS="selectedby" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="allocationid-courseitemid" UNIQUE="true" FIELDS="allocationid, courseitemid" COMMENT="Unique selection per allocation and course item"/>
+        <INDEX NAME="allocationid-setitemid" UNIQUE="false" FIELDS="allocationid, setitemid" COMMENT="Index for quick lookup of set selections per allocation"/>
+      </INDEXES>
     </TABLE>
   </TABLES>
 </XMLDB>

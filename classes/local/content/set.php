@@ -30,6 +30,7 @@ class set extends item {
     public const SEQUENCE_TYPE_ALLINANYORDER = 'allinanyorder';
     public const SEQUENCE_TYPE_ALLINORDER = 'allinorder';
     public const SEQUENCE_TYPE_ATLEAST = 'atleast';
+    public const SEQUENCE_TYPE_STUDENTCHOICE = 'studentchoice';
 
     /** @var item[] list of children */
     protected $children = [];
@@ -49,6 +50,7 @@ class set extends item {
             self::SEQUENCE_TYPE_ALLINANYORDER,
             self::SEQUENCE_TYPE_ALLINORDER,
             self::SEQUENCE_TYPE_ATLEAST,
+            self::SEQUENCE_TYPE_STUDENTCHOICE,
         ];
         $result = [];
         $a = new \stdClass();
@@ -148,8 +150,8 @@ class set extends item {
             if (!$item->minprerequisites) {
                 $item->minprerequisites = 1;
             }
-        } else if ($sequence->type === self::SEQUENCE_TYPE_ATLEAST) {
-            $item->sequencetype = self::SEQUENCE_TYPE_ATLEAST;
+        } else if ($sequence->type === self::SEQUENCE_TYPE_ATLEAST || $sequence->type === self::SEQUENCE_TYPE_STUDENTCHOICE) {
+            $item->sequencetype = $sequence->type;
             if ($record->minprerequisites) {
                 $item->minprerequisites = $record->minprerequisites;
             } else {
@@ -299,7 +301,7 @@ class set extends item {
      */
     protected function add_child(item $item): void {
         $this->children[] = $item;
-        if ($this->sequencetype !== self::SEQUENCE_TYPE_ATLEAST) {
+        if ($this->sequencetype !== self::SEQUENCE_TYPE_ATLEAST && $this->sequencetype !== self::SEQUENCE_TYPE_STUDENTCHOICE) {
             $this->minprerequisites = count($this->children);
             if (!$this->minprerequisites) {
                 $this->minprerequisites = 1;
@@ -321,7 +323,7 @@ class set extends item {
                 break;
             }
         }
-        if ($this->sequencetype !== self::SEQUENCE_TYPE_ATLEAST) {
+        if ($this->sequencetype !== self::SEQUENCE_TYPE_ATLEAST && $this->sequencetype !== self::SEQUENCE_TYPE_STUDENTCHOICE) {
             $this->minprerequisites = count($this->children);
             if (!$this->minprerequisites) {
                 $this->minprerequisites = 1;

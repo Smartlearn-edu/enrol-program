@@ -250,7 +250,7 @@ final class top extends set {
             throw new \coding_exception('invalid sequence type');
         }
 
-        if ($sequencetype !== set::SEQUENCE_TYPE_ATLEAST) {
+        if ($sequencetype !== set::SEQUENCE_TYPE_ATLEAST && $sequencetype !== set::SEQUENCE_TYPE_STUDENTCHOICE) {
             $minprerequisites = 1;
         } else {
             if ($minprerequisites <= 0) {
@@ -328,7 +328,7 @@ final class top extends set {
         } else {
             $set->inorder = true;
         }
-        if ($set->sequencetype !== set::SEQUENCE_TYPE_ATLEAST) {
+        if ($set->sequencetype !== set::SEQUENCE_TYPE_ATLEAST && $set->sequencetype !== set::SEQUENCE_TYPE_STUDENTCHOICE) {
             $set->minprerequisites = count($set->get_children());
             if (!$set->minprerequisites) {
                 $set->minprerequisites = 1;
@@ -406,7 +406,7 @@ final class top extends set {
                     break;
                 }
             }
-            if ($oldparent->sequencetype !== set::SEQUENCE_TYPE_ATLEAST) {
+            if ($oldparent->sequencetype !== set::SEQUENCE_TYPE_ATLEAST && $oldparent->sequencetype !== set::SEQUENCE_TYPE_STUDENTCHOICE) {
                 $oldparent->minprerequisites = count($oldparent->children);
             }
             if ($oldparent->minprerequisites < 1) {
@@ -432,7 +432,7 @@ final class top extends set {
             $newchildren[] = $item;
         }
         $newparent->children = $newchildren;
-        if ($newparent->sequencetype !== set::SEQUENCE_TYPE_ATLEAST) {
+        if ($newparent->sequencetype !== set::SEQUENCE_TYPE_ATLEAST && $newparent->sequencetype !== set::SEQUENCE_TYPE_STUDENTCHOICE) {
             $newparent->minprerequisites = count($newparent->children);
         }
         if ($newparent->minprerequisites < 1) {
@@ -479,7 +479,7 @@ final class top extends set {
                 }
             }
             $parent->children = array_values($parent->children);
-            if ($parent->sequencetype !== set::SEQUENCE_TYPE_ATLEAST) {
+            if ($parent->sequencetype !== set::SEQUENCE_TYPE_ATLEAST && $parent->sequencetype !== set::SEQUENCE_TYPE_STUDENTCHOICE) {
                 $parent->minprerequisites = count($parent->get_children());
                 if (!$parent->minprerequisites) {
                     $parent->minprerequisites = 1;

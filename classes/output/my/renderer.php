@@ -100,12 +100,67 @@ EOT;
     }
 
     public function render_user_progress(stdClass $program, stdClass $allocation): string {
-        global $DB;
+        global $DB, $USER;
 
         $top = program::load_content($program->id);
+        $programcontext = \context::instance_by_id($program->contextid);
+        $canedit = has_capability('enrol/programs:edit', $programcontext);
+
+        // Find any student choice sets requiring selection.
+        $pendingforms = [];
+        $checkpending = function(item $item) use (&$checkpending, &$pendingforms, $allocation): void {
+            if ($item instanceof set && $item->get_sequencetype() === set::SEQUENCE_TYPE_STUDENTCHOICE) {
+                $selections = allocation::get_user_selections($allocation->id, $item->get_id());
+                $unlocked = allocation::is_set_unlocked_for_selection($allocation->id, $item->get_id());
+                if ($unlocked && empty($selections)) {
+                    $pendingforms[] = $item;
+                }
+            }
+            if ($item instanceof set) {
+                foreach ($item->get_children() as $child) {
+                    $checkpending($child);
+                }
+            }
+        };
+        $checkpending($top);
+
+        $selectionformhtml = '';
+        if ($pendingforms) {
+            foreach ($pendingforms as $setitem) {
+                $minreq = $setitem->get_minprerequisites();
+                $setname = format_string($setitem->get_fullname());
+                $formurl = new \moodle_url('/enrol/programs/my/select_courses.php');
+
+                $selectionformhtml .= '<div class="alert alert-info border p-3 mb-4 rounded">';
+                $selectionformhtml .= '<h4 class="alert-heading font-weight-bold">' . get_string('selectcourses', 'enrol_programs') . ': ' . $setname . '</h4>';
+                $selectionformhtml .= '<p>' . get_string('selectncourses', 'enrol_programs', $minreq) . '</p>';
+                $selectionformhtml .= '<form method="post" action="' . $formurl->out(false) . '">';
+                $selectionformhtml .= '<input type="hidden" name="sesskey" value="' . sesskey() . '">';
+                $selectionformhtml .= '<input type="hidden" name="id" value="' . $program->id . '">';
+                $selectionformhtml .= '<input type="hidden" name="setid" value="' . $setitem->get_id() . '">';
+                $selectionformhtml .= '<div class="form-group my-3">';
+
+                foreach ($setitem->get_children() as $child) {
+                    if ($child instanceof course) {
+                        $childname = format_string($child->get_fullname());
+                        $cid = $child->get_id();
+                        $checkboxid = 'course_choice_' . $cid;
+                        $selectionformhtml .= '<div class="custom-control custom-checkbox my-2">';
+                        $selectionformhtml .= '<input type="checkbox" class="custom-control-input" id="' . $checkboxid . '" name="courses[]" value="' . $cid . '">';
+                        $selectionformhtml .= '<label class="custom-control-label" for="' . $checkboxid . '">' . $childname . '</label>';
+                        $selectionformhtml .= '</div>';
+                    }
+                }
+
+                $selectionformhtml .= '</div>';
+                $selectionformhtml .= '<button type="submit" class="btn btn-primary">' . get_string('confirmselection', 'enrol_programs') . '</button>';
+                $selectionformhtml .= '</form>';
+                $selectionformhtml .= '</div>';
+            }
+        }
 
         $rows = [];
-        $renderercolumns = function(item $item, $itemdepth) use (&$renderercolumns, &$rows, $allocation, &$DB): void {
+        $renderercolumns = function(item $item, $itemdepth, ?set $parent = null) use (&$renderercolumns, &$rows, $allocation, &$DB, $canedit, $program): void {
             $fullname = $item->get_fullname();
             $id = $item->get_id();
             $padding = str_repeat('&nbsp;', $itemdepth * 6);
@@ -113,6 +168,27 @@ EOT;
             $completiontype = '';
             if ($item instanceof set) {
                 $completiontype = $item->get_sequencetype_info();
+                if ($item->get_sequencetype() === set::SEQUENCE_TYPE_STUDENTCHOICE) {
+                    $selections = allocation::get_user_selections($allocation->id, $item->get_id());
+                    $unlocked = allocation::is_set_unlocked_for_selection($allocation->id, $item->get_id());
+                    if ($selections) {
+                        $completiontype .= ' <span class="badge badge-info">' . get_string('selectedcoursescount', 'enrol_programs', count($selections)) . '</span>';
+                        if ($canedit) {
+                            $reseturl = new \moodle_url('/enrol/programs/my/select_courses.php', [
+                                'id' => $program->id,
+                                'setid' => $item->get_id(),
+                                'userid' => $allocation->userid,
+                                'reset' => 1,
+                                'sesskey' => sesskey(),
+                            ]);
+                            $completiontype .= ' ' . \html_writer::link($reseturl, get_string('resetselection', 'enrol_programs'), ['class' => 'btn btn-sm btn-outline-secondary']);
+                        }
+                    } else if ($unlocked) {
+                        $completiontype .= ' <span class="badge badge-warning">' . get_string('selectionrequired', 'enrol_programs') . '</span>';
+                    } else {
+                        $completiontype .= ' <span class="badge badge-secondary">' . get_string('locked', 'enrol_programs') . '</span>';
+                    }
+                }
             }
 
             if ($item instanceof course) {
@@ -131,6 +207,16 @@ EOT;
                     if ($canaccesscourse) {
                         $detailurl = new \moodle_url('/course/view.php', ['id' => $courseid]);
                         $fullname = \html_writer::link($detailurl, $fullname);
+                    }
+                }
+                if ($parent && $parent->get_sequencetype() === set::SEQUENCE_TYPE_STUDENTCHOICE) {
+                    $selections = allocation::get_user_selections($allocation->id, $parent->get_id());
+                    if ($selections) {
+                        if (isset($selections[$item->get_id()])) {
+                            $fullname .= ' <span class="badge badge-success">' . get_string('selected', 'enrol_programs') . '</span>';
+                        } else {
+                            $fullname .= ' <span class="badge badge-light text-muted">' . get_string('notselected', 'enrol_programs') . '</span>';
+                        }
                     }
                 }
             }
@@ -155,10 +241,10 @@ EOT;
             $rows[] = $row;
 
             foreach ($item->get_children() as $child) {
-                $renderercolumns($child, $itemdepth + 1);
+                $renderercolumns($child, $itemdepth + 1, ($item instanceof set ? $item : null));
             }
         };
-        $renderercolumns($top, 0);
+        $renderercolumns($top, 0, null);
 
         $table = new \html_table();
         $table->head = [get_string('item', 'enrol_programs'), get_string('sequencetype', 'enrol_programs')];
@@ -167,7 +253,8 @@ EOT;
         $table->attributes['class'] = 'admintable generaltable';
         $table->data = $rows;
 
-        $result = $this->output->heading(get_string('tabcontent', 'enrol_programs'), 3);
+        $result = $selectionformhtml;
+        $result .= $this->output->heading(get_string('tabcontent', 'enrol_programs'), 3);
         $result .= \html_writer::table($table);
 
         return $result;

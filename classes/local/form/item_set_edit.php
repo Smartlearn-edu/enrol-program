@@ -48,10 +48,11 @@ final class item_set_edit extends \local_openlms\dialog_form {
         $mform->addElement('select', 'sequencetype', get_string('sequencetype', 'enrol_programs'), $stypes);
         $mform->setDefault('sequencetype', $set->get_sequencetype());
 
-        $mform->addElement('text', 'minprerequisites', $stypes[set::SEQUENCE_TYPE_ATLEAST]);
+        $mform->addElement('text', 'minprerequisites', get_string('minprerequisites', 'enrol_programs'));
         $mform->setType('minprerequisites', PARAM_INT);
         $mform->setDefault('minprerequisites', 1);
-        $mform->hideIf('minprerequisites', 'sequencetype', 'noteq', set::SEQUENCE_TYPE_ATLEAST);
+        $mform->hideIf('minprerequisites', 'sequencetype', 'eq', set::SEQUENCE_TYPE_ALLINORDER);
+        $mform->hideIf('minprerequisites', 'sequencetype', 'eq', set::SEQUENCE_TYPE_ALLINANYORDER);
         $mform->setDefault('minprerequisites', $set->get_minprerequisites());
 
         $mform->addElement('hidden', 'id');
@@ -67,7 +68,7 @@ final class item_set_edit extends \local_openlms\dialog_form {
         if (trim($data['fullname']) === '') {
             $errors['fullname'] = get_string('required');
         }
-        if ($data['sequencetype'] === set::SEQUENCE_TYPE_ATLEAST) {
+        if ($data['sequencetype'] === set::SEQUENCE_TYPE_ATLEAST || $data['sequencetype'] === set::SEQUENCE_TYPE_STUDENTCHOICE) {
             if ($data['minprerequisites'] <= 0) {
                 $errors['minprerequisites'] = get_string('required');
             }
