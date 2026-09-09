@@ -618,6 +618,8 @@ final class program {
             $DB->delete_records('enrol_programs_completions', ['itemid' => $item->id]);
             $DB->delete_records('enrol_programs_prerequisites', ['itemid' => $item->id]);
             $DB->delete_records('enrol_programs_prerequisites', ['prerequisiteitemid' => $item->id]);
+            $DB->delete_records('enrol_programs_selections', ['setitemid' => $item->id]);
+            $DB->delete_records('enrol_programs_selections', ['courseitemid' => $item->id]);
         }
         unset($items);
         $DB->delete_records('enrol_programs_allocations', ['programid' => $program->id]);

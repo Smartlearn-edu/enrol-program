@@ -72,7 +72,8 @@ if ($targetuserid != $USER->id) {
 }
 
 if ($reset) {
-    // Admin or student resetting their selections.
+    // Only admins can reset selections.
+    require_capability('enrol/programs:edit', $programcontext);
     allocation::reset_user_selections($allocation->id, $setid);
     \core\notification::info(get_string('coursesselectionreset', 'enrol_programs'));
     redirect($returnurl);

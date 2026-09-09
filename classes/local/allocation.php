@@ -1029,6 +1029,7 @@ final class allocation {
         foreach ($allocations as $allocation) {
             self::make_snapshot($allocation->id, 'user_deleted');
             $DB->delete_records('enrol_programs_completions', ['allocationid' => $allocation->id]);
+            $DB->delete_records('enrol_programs_selections', ['allocationid' => $allocation->id]);
         }
         $DB->delete_records('enrol_programs_evidences', ['userid' => $userid]);
         $DB->delete_records('enrol_programs_allocations', ['userid' => $userid]);
@@ -1264,6 +1265,15 @@ final class allocation {
                     return false;
                 }
             }
+        }
+
+        // If selections already exist, the set is locked.
+        $existingselections = $DB->record_exists('enrol_programs_selections', [
+            'allocationid' => $allocationid,
+            'setitemid' => $setitemid,
+        ]);
+        if ($existingselections) {
+            return false;
         }
 
         return true;

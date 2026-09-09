@@ -313,6 +313,7 @@
       <INDEXES>
         <INDEX NAME="sourceid-cohortid" UNIQUE="true" FIELDS="sourceid, cohortid"/>
       </INDEXES>
+    </TABLE>
     <TABLE NAME="enrol_programs_selections" COMMENT="Course selections made by users for student choice sets">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>

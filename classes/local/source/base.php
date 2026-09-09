@@ -441,6 +441,7 @@ abstract class base {
             $DB->delete_records('enrol_programs_evidences', ['itemid' => $item->id, 'userid' => $allocation->userid]);
             $DB->delete_records('enrol_programs_completions', ['itemid' => $item->id, 'allocationid' => $allocation->id]);
         }
+        $DB->delete_records('enrol_programs_selections', ['allocationid' => $allocation->id]);
         $DB->delete_records('enrol_programs_allocations', ['id' => $allocation->id]);
 
         $trans->allow_commit();
