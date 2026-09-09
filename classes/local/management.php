@@ -204,27 +204,26 @@ final class management {
 
         $syscontext = \context_system::instance();
 
-        if (has_capability('enrol/programs:view', $syscontext) && has_capability('moodle/site:config', $syscontext)) {
-            require_once($CFG->libdir . '/adminlib.php');
-            admin_externalpage_setup('programsmanagement', '', null, $pageurl, ['pagelayout' => 'admin', 'nosearch' => true]);
-            $PAGE->set_heading(get_string('management', 'enrol_programs'));
-            $PAGE->set_secondary_navigation(false);
-        } else {
-            $PAGE->set_pagelayout('admin');
-            $PAGE->set_context($context);
-            $PAGE->set_url($pageurl);
-            $PAGE->set_title(get_string('programs', 'enrol_programs'));
-            $PAGE->set_heading(get_string('management', 'enrol_programs'));
-            if ($contextid) {
-                if (has_capability('enrol/programs:view', $syscontext)) {
-                    $url = new moodle_url('/enrol/programs/management/index.php');
-                    $PAGE->navbar->add(get_string('management', 'enrol_programs'), $url);
-                } else {
-                    $PAGE->navbar->add(get_string('management', 'enrol_programs'));
-                }
+        $PAGE->set_pagelayout('admin');
+        $PAGE->set_context($context);
+        $PAGE->set_url($pageurl);
+        $PAGE->set_title(get_string('programs', 'enrol_programs'));
+        $PAGE->set_heading(get_string('management', 'enrol_programs'));
+        $PAGE->set_secondary_navigation(false);
+
+        if (has_capability('moodle/site:config', $syscontext)) {
+            $PAGE->navbar->add(get_string('administrationsite'), new moodle_url('/admin/search.php'));
+        }
+
+        if ($contextid) {
+            if (has_capability('enrol/programs:view', $syscontext)) {
+                $url = new moodle_url('/enrol/programs/management/index.php');
+                $PAGE->navbar->add(get_string('management', 'enrol_programs'), $url);
             } else {
                 $PAGE->navbar->add(get_string('management', 'enrol_programs'));
             }
+        } else {
+            $PAGE->navbar->add(get_string('management', 'enrol_programs'));
         }
 
         $PAGE->set_docs_path("$CFG->wwwroot/enrol/programs/documentation.php/management.md");
@@ -247,20 +246,19 @@ final class management {
 
         $syscontext = \context_system::instance();
 
-        if (has_capability('enrol/programs:view', $syscontext) && has_capability('moodle/site:config', $syscontext)) {
-            require_once($CFG->libdir . '/adminlib.php');
-            admin_externalpage_setup('programsmanagement', '', null, $pageurl, ['pagelayout' => 'admin', 'nosearch' => true]);
-            $PAGE->set_heading(format_string($program->fullname));
-        } else {
-            $PAGE->set_pagelayout('admin');
-            $PAGE->set_context($context);
-            $PAGE->set_url($pageurl);
-            $PAGE->set_title(get_string('programs', 'enrol_programs'));
-            $PAGE->set_heading(format_string($program->fullname));
-            $url = new moodle_url('/enrol/programs/management/index.php', ['contextid' => $context->id]);
-            $PAGE->navbar->add(get_string('management', 'enrol_programs'), $url);
-        }
+        $PAGE->set_pagelayout('admin');
+        $PAGE->set_context($context);
+        $PAGE->set_url($pageurl);
+        $PAGE->set_title(get_string('programs', 'enrol_programs'));
+        $PAGE->set_heading(format_string($program->fullname));
         $PAGE->set_secondary_navigation(false);
+
+        if (has_capability('moodle/site:config', $syscontext)) {
+            $PAGE->navbar->add(get_string('administrationsite'), new moodle_url('/admin/search.php'));
+        }
+
+        $url = new moodle_url('/enrol/programs/management/index.php', ['contextid' => $context->id]);
+        $PAGE->navbar->add(get_string('management', 'enrol_programs'), $url);
         $PAGE->navbar->add(format_string($program->fullname));
 
         $PAGE->set_docs_path("$CFG->wwwroot/enrol/programs/documentation.php/management.md");
