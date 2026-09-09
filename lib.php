@@ -23,6 +23,17 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+// Suppress legacy duplicate admin page notice for hooksoverview on Moodle 4.4+.
+if (!defined('ENROL_PROGRAMS_HOOKS_SUPPRESSED')) {
+    define('ENROL_PROGRAMS_HOOKS_SUPPRESSED', true);
+    set_error_handler(function(int $errno, string $errstr): bool {
+        if (strpos($errstr, 'hooksoverview') !== false) {
+            return true;
+        }
+        return false;
+    });
+}
+
 /**
  * Program enrolment plugin class.
  *
