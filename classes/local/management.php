@@ -204,31 +204,30 @@ final class management {
 
         $syscontext = \context_system::instance();
 
-        $PAGE->set_pagelayout('admin');
-        $PAGE->set_context($context);
-        $PAGE->set_url($pageurl);
-        $PAGE->set_title(get_string('programs', 'enrol_programs'));
-        $PAGE->set_heading(get_string('management', 'enrol_programs'));
-        $PAGE->set_secondary_navigation(false);
-
-        if (has_capability('moodle/site:config', $syscontext)) {
-            $PAGE->navbar->add(get_string('administrationsite'), new moodle_url('/admin/search.php'));
-        }
-
-        if ($contextid) {
-            if (has_capability('enrol/programs:view', $syscontext)) {
-                $url = new moodle_url('/enrol/programs/management/index.php');
-                $PAGE->navbar->add(get_string('management', 'enrol_programs'), $url);
+        if (has_capability('enrol/programs:view', $syscontext) && has_capability('moodle/site:config', $syscontext)) {
+            require_once($CFG->libdir . '/adminlib.php');
+            admin_externalpage_setup('programsmanagement', '', null, $pageurl, ['pagelayout' => 'admin', 'nosearch' => true]);
+            $PAGE->set_heading(get_string('management', 'enrol_programs'));
+            $PAGE->set_secondary_navigation(false);
+        } else {
+            $PAGE->set_pagelayout('admin');
+            $PAGE->set_context($context);
+            $PAGE->set_url($pageurl);
+            $PAGE->set_title(get_string('programs', 'enrol_programs'));
+            $PAGE->set_heading(get_string('management', 'enrol_programs'));
+            if ($contextid) {
+                if (has_capability('enrol/programs:view', $syscontext)) {
+                    $url = new moodle_url('/enrol/programs/management/index.php');
+                    $PAGE->navbar->add(get_string('management', 'enrol_programs'), $url);
+                } else {
+                    $PAGE->navbar->add(get_string('management', 'enrol_programs'));
+                }
             } else {
                 $PAGE->navbar->add(get_string('management', 'enrol_programs'));
             }
-        } else {
-            $PAGE->navbar->add(get_string('management', 'enrol_programs'));
         }
 
         $PAGE->set_docs_path("$CFG->wwwroot/enrol/programs/documentation.php/management.md");
-
-        self::pre_init_admin_nav();
     }
 
     /**
@@ -248,77 +247,22 @@ final class management {
 
         $syscontext = \context_system::instance();
 
-        $PAGE->set_pagelayout('admin');
-        $PAGE->set_context($context);
-        $PAGE->set_url($pageurl);
-        $PAGE->set_title(get_string('programs', 'enrol_programs'));
-        $PAGE->set_heading(format_string($program->fullname));
-        $PAGE->set_secondary_navigation(false);
-
-        if (has_capability('moodle/site:config', $syscontext)) {
-            $PAGE->navbar->add(get_string('administrationsite'), new moodle_url('/admin/search.php'));
+        if (has_capability('enrol/programs:view', $syscontext) && has_capability('moodle/site:config', $syscontext)) {
+            require_once($CFG->libdir . '/adminlib.php');
+            admin_externalpage_setup('programsmanagement', '', null, $pageurl, ['pagelayout' => 'admin', 'nosearch' => true]);
+            $PAGE->set_heading(format_string($program->fullname));
+        } else {
+            $PAGE->set_pagelayout('admin');
+            $PAGE->set_context($context);
+            $PAGE->set_url($pageurl);
+            $PAGE->set_title(get_string('programs', 'enrol_programs'));
+            $PAGE->set_heading(format_string($program->fullname));
+            $url = new moodle_url('/enrol/programs/management/index.php', ['contextid' => $context->id]);
+            $PAGE->navbar->add(get_string('management', 'enrol_programs'), $url);
         }
-
-        $url = new moodle_url('/enrol/programs/management/index.php', ['contextid' => $context->id]);
-        $PAGE->navbar->add(get_string('management', 'enrol_programs'), $url);
+        $PAGE->set_secondary_navigation(false);
         $PAGE->navbar->add(format_string($program->fullname));
 
         $PAGE->set_docs_path("$CFG->wwwroot/enrol/programs/documentation.php/management.md");
-
-        self::pre_init_admin_nav();
-    }
-
-    /**
-     * Safely initialise admin navigation to prevent third-party duplicate admin page notices.
-     *
-     * In Moodle 4.4+, legacy plugins registering duplicate page names like 'hooksoverview'
-     * trigger debugging notices during admin tree and navigation compilation.
-     * Pre-warming the navigation with debugging output suppressed avoids these notices.
-     *
-     * @return void
-     */
-    protected static function pre_init_admin_nav(): void {
-        global $PAGE, $CFG;
-
-        $syscontext = \context_system::instance();
-        if (!has_capability('moodle/site:config', $syscontext)) {
-            return;
-        }
-
-        $origdebug = $CFG->debug ?? 0;
-        $origdebugdisplay = $CFG->debugdisplay ?? 0;
-
-        $CFG->debug = 0;
-        $CFG->debugdisplay = 0;
-
-        try {
-            set_error_handler(function(int $errno, string $errstr): bool {
-                if (strpos($errstr, 'hooksoverview') !== false) {
-                    return true;
-                }
-                return false;
-            });
-
-            require_once($CFG->libdir . '/adminlib.php');
-            admin_get_root();
-
-            // Force access to magic properties to instantiate and initialise both navigations.
-            $settingsnav = $PAGE->settingsnav;
-            if ($settingsnav && method_exists($settingsnav, 'initialise')) {
-                $settingsnav->initialise();
-            }
-
-            $primarynav = $PAGE->primarynav;
-            if ($primarynav && method_exists($primarynav, 'initialise')) {
-                $primarynav->initialise();
-            }
-
-            restore_error_handler();
-        } catch (\Throwable $e) {
-            // Ignore any issues during pre-initialisation.
-        } finally {
-            $CFG->debug = $origdebug;
-            $CFG->debugdisplay = $origdebugdisplay;
-        }
     }
 }
