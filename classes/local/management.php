@@ -292,11 +292,28 @@ final class management {
         $CFG->debugdisplay = 0;
 
         try {
+            set_error_handler(function(int $errno, string $errstr): bool {
+                if (strpos($errstr, 'hooksoverview') !== false) {
+                    return true;
+                }
+                return false;
+            });
+
             require_once($CFG->libdir . '/adminlib.php');
             admin_get_root();
-            if (isset($PAGE->settingsnav)) {
-                $PAGE->settingsnav->initialise();
+
+            // Force access to magic properties to instantiate and initialise both navigations.
+            $settingsnav = $PAGE->settingsnav;
+            if ($settingsnav && method_exists($settingsnav, 'initialise')) {
+                $settingsnav->initialise();
             }
+
+            $primarynav = $PAGE->primarynav;
+            if ($primarynav && method_exists($primarynav, 'initialise')) {
+                $primarynav->initialise();
+            }
+
+            restore_error_handler();
         } catch (\Throwable $e) {
             // Ignore any issues during pre-initialisation.
         } finally {
