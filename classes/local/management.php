@@ -227,6 +227,8 @@ final class management {
         }
 
         $PAGE->set_docs_path("$CFG->wwwroot/enrol/programs/documentation.php/management.md");
+
+        self::pre_init_admin_nav();
     }
 
     /**
@@ -262,5 +264,44 @@ final class management {
         $PAGE->navbar->add(format_string($program->fullname));
 
         $PAGE->set_docs_path("$CFG->wwwroot/enrol/programs/documentation.php/management.md");
+
+        self::pre_init_admin_nav();
+    }
+
+    /**
+     * Safely initialise admin navigation to prevent third-party duplicate admin page notices.
+     *
+     * In Moodle 4.4+, legacy plugins registering duplicate page names like 'hooksoverview'
+     * trigger debugging notices during admin tree and navigation compilation.
+     * Pre-warming the navigation with debugging output suppressed avoids these notices.
+     *
+     * @return void
+     */
+    protected static function pre_init_admin_nav(): void {
+        global $PAGE, $CFG;
+
+        $syscontext = \context_system::instance();
+        if (!has_capability('moodle/site:config', $syscontext)) {
+            return;
+        }
+
+        $origdebug = $CFG->debug ?? 0;
+        $origdebugdisplay = $CFG->debugdisplay ?? 0;
+
+        $CFG->debug = 0;
+        $CFG->debugdisplay = 0;
+
+        try {
+            require_once($CFG->libdir . '/adminlib.php');
+            admin_get_root();
+            if (isset($PAGE->settingsnav)) {
+                $PAGE->settingsnav->initialise();
+            }
+        } catch (\Throwable $e) {
+            // Ignore any issues during pre-initialisation.
+        } finally {
+            $CFG->debug = $origdebug;
+            $CFG->debugdisplay = $origdebugdisplay;
+        }
     }
 }
