@@ -599,6 +599,7 @@ final class allocation {
             $now = time();
             $params['now1'] = $now;
             $params['now2'] = $now;
+            $params['seqpattern'] = '%' . set::SEQUENCE_TYPE_STUDENTCHOICE . '%';
             $sql = "SELECT psi.id AS itemid, pa.id AS allocationid, psi.minprerequisites, COUNT(pric.id) AS precount
                       FROM {enrol_programs_items} psi
                       JOIN {enrol_programs_programs} p ON p.id = psi.programid
@@ -606,7 +607,9 @@ final class allocation {
                  LEFT JOIN {enrol_programs_completions} psic ON psic.itemid = psi.id AND psic.allocationid = pa.id
                       JOIN {enrol_programs_prerequisites} pr ON pr.itemid = psi.id
                       JOIN {enrol_programs_completions} pric ON pric.itemid = pr.prerequisiteitemid AND pric.allocationid = pa.id
+                 LEFT JOIN {enrol_programs_selections} sel ON sel.allocationid = pa.id AND sel.courseitemid = pr.prerequisiteitemid
                      WHERE psic.id IS NULL AND psi.courseid IS NULL
+                           AND (" . $DB->sql_like('psi.sequencejson', ':seqpattern', true, true, true) . " OR sel.id IS NOT NULL)
                            AND p.archived = 0 AND pa.archived = 0
                            AND (pa.timestart IS NULL OR pa.timestart <= :now1)
                            AND (pa.timeend IS NULL OR pa.timeend > :now2)

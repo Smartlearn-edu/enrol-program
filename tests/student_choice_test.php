@@ -109,6 +109,9 @@ final class student_choice_test extends \advanced_testcase {
         // User selects course 2 and course 4 (2 courses out of 4).
         allocation::save_user_selections($allocation->id, $stage2->get_id(), [$item2->get_id(), $item4->get_id()], $user1->id);
 
+        // Stage 2 is now locked after selection.
+        $this->assertFalse(allocation::is_set_unlocked_for_selection($allocation->id, $stage2->get_id()));
+
         $selections = allocation::get_user_selections($allocation->id, $stage2->get_id());
         $this->assertCount(2, $selections);
         $this->assertArrayHasKey($item2->get_id(), $selections);
@@ -122,16 +125,37 @@ final class student_choice_test extends \advanced_testcase {
         $this->assertFalse(is_enrolled($context3, $user1, '', true));
         $this->assertFalse(is_enrolled($context5, $user1, '', true));
 
+        // Test reset by admin:
+        allocation::reset_user_selections($allocation->id, $stage2->get_id());
+        $this->assertEmpty(allocation::get_user_selections($allocation->id, $stage2->get_id()));
+        $this->assertTrue(allocation::is_set_unlocked_for_selection($allocation->id, $stage2->get_id()));
+        // After reset, course 2 and 4 must be suspended again!
+        $this->assertFalse(is_enrolled($context2, $user1, '', true));
+        $this->assertFalse(is_enrolled($context4, $user1, '', true));
+
+        // User now selects course 2 and course 3.
+        allocation::save_user_selections($allocation->id, $stage2->get_id(), [$item2->get_id(), $item3->get_id()], $user1->id);
+        $this->assertTrue(is_enrolled($context2, $user1, '', true));
+        $this->assertTrue(is_enrolled($context3, $user1, '', true));
+        $this->assertFalse(is_enrolled($context4, $user1, '', true));
+        $this->assertFalse(is_enrolled($context5, $user1, '', true));
+
+        // Simulate completing UNSELECTED course 5: must NOT count towards stage 2!
+        $ccompletion5 = new \completion_completion(['course' => $course5->id, 'userid' => $user1->id]);
+        $ccompletion5->mark_complete();
+        allocation::fix_user_enrolments($program1->id, $user1->id);
+        $this->assertFalse($DB->record_exists('enrol_programs_completions', ['itemid' => $stage2->get_id(), 'allocationid' => $allocation->id]));
+
         // Complete chosen course 2.
         $ccompletion = new \completion_completion(['course' => $course2->id, 'userid' => $user1->id]);
         $ccompletion->mark_complete();
         allocation::fix_user_enrolments($program1->id, $user1->id);
 
-        // Stage 2 not complete yet (requires 2 courses).
+        // Stage 2 not complete yet (requires 2 chosen courses, only course 2 is chosen & complete; course 5 was not chosen).
         $this->assertFalse($DB->record_exists('enrol_programs_completions', ['itemid' => $stage2->get_id(), 'allocationid' => $allocation->id]));
 
-        // Complete chosen course 4.
-        $ccompletion = new \completion_completion(['course' => $course4->id, 'userid' => $user1->id]);
+        // Complete chosen course 3.
+        $ccompletion = new \completion_completion(['course' => $course3->id, 'userid' => $user1->id]);
         $ccompletion->mark_complete();
         allocation::fix_user_enrolments($program1->id, $user1->id);
 
@@ -140,5 +164,10 @@ final class student_choice_test extends \advanced_testcase {
 
         // Program is completed!
         $this->assertTrue($DB->record_exists('enrol_programs_completions', ['itemid' => $top->get_id(), 'allocationid' => $allocation->id]));
+
+        // Verify cleanup on deallocation.
+        $this->assertTrue($DB->record_exists('enrol_programs_selections', ['allocationid' => $allocation->id]));
+        \enrol_programs\local\source\manual::deallocate_user($program1, $source1, $allocation);
+        $this->assertFalse($DB->record_exists('enrol_programs_selections', ['allocationid' => $allocation->id]));
     }
 }
