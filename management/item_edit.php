@@ -73,7 +73,10 @@ if ($form->is_cancelled()) {
 }
 
 if ($data = $form->get_data()) {
-    $top->update_set($set, $data->fullname, $data->sequencetype, $data->minprerequisites);
+    $mincredits = isset($data->mincredits) ? (float)$data->mincredits : 0.0;
+    $minpoints = isset($data->minpoints) ? (int)$data->minpoints : 0;
+    $completionrule = $data->completionrule ?? set::COMPLETION_RULE_COURSES;
+    $top->update_set($set, $data->fullname, $data->sequencetype, $data->minprerequisites, $completionrule, $mincredits, $minpoints);
     $form->redirect_submitted($returnurl);
 }
 

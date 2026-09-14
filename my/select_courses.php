@@ -85,12 +85,92 @@ if (!allocation::is_set_unlocked_for_selection($allocation->id, $setid)) {
     redirect($returnurl);
 }
 
-$setitem = $DB->get_record('enrol_programs_items', ['id' => $setid, 'programid' => $program->id], '*', MUST_EXIST);
-$minrequired = (int)$setitem->minprerequisites;
-
-if (count($courses) !== $minrequired) {
-    \core\notification::error(get_string('errorselectexactcount', 'enrol_programs', $minrequired));
+$top = \enrol_programs\local\program::load_content($program->id);
+$set = $top->find_item($setid);
+if (!$set || !($set instanceof set)) {
+    \core\notification::error(get_string('errorinvalidcourse', 'enrol_programs'));
     redirect($returnurl);
+}
+
+$rule = $set->get_completionrule();
+$minrequired = $set->get_minprerequisites();
+$mincredits = $set->get_mincredits();
+$minpoints = $set->get_minpoints();
+
+// Calculate selected metrics.
+$selectedcourses = [];
+$selectedcredits = 0.0;
+$selectedpoints = 0;
+
+$childmap = [];
+foreach ($set->get_children() as $child) {
+    if ($child instanceof \enrol_programs\local\content\course) {
+        $childmap[$child->get_id()] = $child;
+    }
+}
+
+foreach ($courses as $cid) {
+    if (!isset($childmap[$cid])) {
+        \core\notification::error(get_string('errorinvalidcourse', 'enrol_programs'));
+        redirect($returnurl);
+    }
+    $selectedcourses[$cid] = $childmap[$cid];
+    $selectedcredits += $childmap[$cid]->get_credithours();
+    $selectedpoints += $childmap[$cid]->get_points();
+}
+
+$selectedcount = count($selectedcourses);
+
+if ($rule === set::COMPLETION_RULE_CREDITS) {
+    if ($selectedcredits < $mincredits) {
+        $a = (object)[
+            'selected' => rtrim(rtrim(number_format($selectedcredits, 2), '0'), '.'),
+            'required' => rtrim(rtrim(number_format($mincredits, 2), '0'), '.'),
+        ];
+        \core\notification::error(get_string('errorinsufficientcredits', 'enrol_programs', $a));
+        redirect($returnurl);
+    }
+} else if ($rule === set::COMPLETION_RULE_POINTS) {
+    if ($selectedpoints < $minpoints) {
+        $a = (object)[
+            'selected' => $selectedpoints,
+            'required' => $minpoints,
+        ];
+        \core\notification::error(get_string('errorinsufficientpoints', 'enrol_programs', $a));
+        redirect($returnurl);
+    }
+} else if ($rule === set::COMPLETION_RULE_BOTH_COURSES_CREDITS) {
+    if ($selectedcount < $minrequired) {
+        \core\notification::error(get_string('errorselectexactcount', 'enrol_programs', $minrequired));
+        redirect($returnurl);
+    }
+    if ($selectedcredits < $mincredits) {
+        $a = (object)[
+            'selected' => rtrim(rtrim(number_format($selectedcredits, 2), '0'), '.'),
+            'required' => rtrim(rtrim(number_format($mincredits, 2), '0'), '.'),
+        ];
+        \core\notification::error(get_string('errorinsufficientcredits', 'enrol_programs', $a));
+        redirect($returnurl);
+    }
+} else if ($rule === set::COMPLETION_RULE_BOTH_COURSES_POINTS) {
+    if ($selectedcount < $minrequired) {
+        \core\notification::error(get_string('errorselectexactcount', 'enrol_programs', $minrequired));
+        redirect($returnurl);
+    }
+    if ($selectedpoints < $minpoints) {
+        $a = (object)[
+            'selected' => $selectedpoints,
+            'required' => $minpoints,
+        ];
+        \core\notification::error(get_string('errorinsufficientpoints', 'enrol_programs', $a));
+        redirect($returnurl);
+    }
+} else {
+    // Default course count rule.
+    if ($selectedcount !== $minrequired) {
+        \core\notification::error(get_string('errorselectexactcount', 'enrol_programs', $minrequired));
+        redirect($returnurl);
+    }
 }
 
 try {

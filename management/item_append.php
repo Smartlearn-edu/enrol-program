@@ -71,12 +71,15 @@ if ($form->is_cancelled()) {
 
 if ($data = $form->get_data()) {
     if ($data->addset) {
-        $set = $top->append_set($set, $data->fullname, $data->sequencetype, $data->minprerequisites);
+        $mincredits = isset($data->mincredits) ? (float)$data->mincredits : 0.0;
+        $minpoints = isset($data->minpoints) ? (int)$data->minpoints : 0;
+        $completionrule = $data->completionrule ?? \enrol_programs\local\content\set::COMPLETION_RULE_COURSES;
+        $set = $top->append_set($set, $data->fullname, $data->sequencetype, $data->minprerequisites, $completionrule, $mincredits, $minpoints);
     }
     foreach ($data->courses as $cid) {
         $coursecontext = context_course::instance($cid);
         require_capability('enrol/programs:addcourse', $coursecontext);
-        $top->append_course($set, $cid, null);
+        $top->append_course($set, $cid);
     }
 
     $form->redirect_submitted($returnurl);

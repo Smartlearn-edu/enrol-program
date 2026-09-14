@@ -16,6 +16,7 @@
 
 namespace enrol_programs\local\content;
 
+use enrol_programs\local\trophy_bridge;
 use enrol_programs\local\util;
 
 /**
@@ -33,8 +34,70 @@ final class course extends item {
     /** @var ?item Previous item needs to be completed in order to allow course access */
     protected $previous;
 
+    /** @var float Academic credit hours awarded/weighted for this course */
+    protected $credithours = 0.0;
+
+    /** @var int Gamification points awarded for this course */
+    protected $points = 0;
+
+    /** @var ?string Trophy or medal type (e.g. trophy, medal, merit, pass, star, gem, coin) */
+    protected $medaltype = null;
+
+    /** @var int Trophy or medal reward count */
+    protected $medalreward = 0;
+
     public function get_courseid(): int {
         return $this->courseid;
+    }
+
+    /**
+     * Get academic credit hours for this course.
+     *
+     * @return float
+     */
+    public function get_credithours(): float {
+        return $this->credithours;
+    }
+
+    /**
+     * Get gamification points for this course.
+     *
+     * @return int
+     */
+    public function get_points(): int {
+        return $this->points;
+    }
+
+    /**
+     * Get trophy or medal type.
+     *
+     * @return ?string
+     */
+    public function get_medaltype(): ?string {
+        return $this->medaltype;
+    }
+
+    /**
+     * Get trophy or medal reward amount.
+     *
+     * @return int
+     */
+    public function get_medalreward(): int {
+        return $this->medalreward;
+    }
+
+    /**
+     * Return rewards as a structured object.
+     *
+     * @return \stdClass
+     */
+    public function get_rewards(): \stdClass {
+        $rewards = new \stdClass();
+        $rewards->credithours = $this->credithours;
+        $rewards->points = $this->points;
+        $rewards->medaltype = $this->medaltype ?? '';
+        $rewards->medalreward = $this->medalreward;
+        return $rewards;
     }
 
     /**
@@ -69,6 +132,38 @@ final class course extends item {
     }
 
     /**
+     * Set academic credit hours.
+     *
+     * @param float $credits
+     * @return void
+     */
+    public function set_credithours(float $credits): void {
+        $this->credithours = $credits;
+    }
+
+    /**
+     * Set gamification points.
+     *
+     * @param int $points
+     * @return void
+     */
+    public function set_points(int $points): void {
+        $this->points = $points;
+    }
+
+    /**
+     * Set trophy or medal reward.
+     *
+     * @param ?string $type
+     * @param int $reward
+     * @return void
+     */
+    public function set_medal(?string $type, int $reward = 1): void {
+        $this->medaltype = $type;
+        $this->medalreward = $reward;
+    }
+
+    /**
      * Factory method.
      *
      * @param \stdClass $record
@@ -99,7 +194,27 @@ final class course extends item {
             }
         }
         $item->fullname = $record->fullname;
-        $sequence = (object)json_decode($record->sequencejson);
+        $sequence = (object)json_decode($record->sequencejson ?? '{}');
+
+        if (!empty($sequence->credithours)) {
+            $item->credithours = (float)$sequence->credithours;
+        }
+        if (!empty($sequence->points)) {
+            $item->points = (int)$sequence->points;
+        }
+        if (!empty($sequence->medaltype)) {
+            $item->medaltype = $sequence->medaltype;
+            $item->medalreward = (int)($sequence->medalreward ?? 1);
+        }
+
+        // Auto-detect default rewards from enrol_trophy if not explicitly overridden in item.
+        if ($item->credithours == 0.0 && $item->points == 0 && empty($item->medaltype)) {
+            $trophyrewards = trophy_bridge::get_course_rewards($item->courseid);
+            $item->credithours = $trophyrewards->credithours;
+            $item->points = $trophyrewards->points;
+            $item->medaltype = $trophyrewards->medaltype ?: null;
+            $item->medalreward = $trophyrewards->medalreward;
+        }
 
         if ($record->minprerequisites != 1) {
             $item->problemdetected = true;
@@ -134,6 +249,18 @@ final class course extends item {
             $fullname = $this->fullname;
         }
 
+        $seqdata = [];
+        if ($this->credithours > 0) {
+            $seqdata['credithours'] = $this->credithours;
+        }
+        if ($this->points > 0) {
+            $seqdata['points'] = $this->points;
+        }
+        if (!empty($this->medaltype)) {
+            $seqdata['medaltype'] = $this->medaltype;
+            $seqdata['medalreward'] = $this->medalreward;
+        }
+
         return [
             'id' => (empty($this->id) ? null : (string)$this->id),
             'programid' => (string)$this->programid,
@@ -141,7 +268,7 @@ final class course extends item {
             'courseid' => (string)$this->courseid,
             'previtemid' => (isset($this->previous) ? (string)$this->previous->id : null),
             'fullname' => $fullname,
-            'sequencejson' => util::json_encode([]),
+            'sequencejson' => util::json_encode($seqdata),
             'minprerequisites' => '1',
         ];
     }

@@ -600,13 +600,15 @@ final class allocation {
             $params['now1'] = $now;
             $params['now2'] = $now;
             $params['seqpattern'] = '%' . set::SEQUENCE_TYPE_STUDENTCHOICE . '%';
-            $sql = "SELECT psi.id AS itemid, pa.id AS allocationid, psi.minprerequisites, COUNT(pric.id) AS precount
+            $sql = "SELECT psi.id AS itemid, pa.id AS allocationid, psi.minprerequisites, psi.sequencejson AS setseqjson,
+                           pr.prerequisiteitemid, prei.courseid, prei.sequencejson AS preseqjson
                       FROM {enrol_programs_items} psi
                       JOIN {enrol_programs_programs} p ON p.id = psi.programid
                       JOIN {enrol_programs_allocations} pa ON pa.programid = p.id
                  LEFT JOIN {enrol_programs_completions} psic ON psic.itemid = psi.id AND psic.allocationid = pa.id
                       JOIN {enrol_programs_prerequisites} pr ON pr.itemid = psi.id
                       JOIN {enrol_programs_completions} pric ON pric.itemid = pr.prerequisiteitemid AND pric.allocationid = pa.id
+                      JOIN {enrol_programs_items} prei ON prei.id = pr.prerequisiteitemid
                  LEFT JOIN {enrol_programs_selections} sel ON sel.allocationid = pa.id AND sel.courseitemid = pr.prerequisiteitemid
                      WHERE psic.id IS NULL AND psi.courseid IS NULL
                            AND (" . $DB->sql_like('psi.sequencejson', ':seqpattern', true, true, true) . " OR sel.id IS NOT NULL)
@@ -614,22 +616,83 @@ final class allocation {
                            AND (pa.timestart IS NULL OR pa.timestart <= :now1)
                            AND (pa.timeend IS NULL OR pa.timeend > :now2)
                            $programselect $userselect
-                  GROUP BY psi.id, pa.id, psi.minprerequisites
-                    HAVING psi.minprerequisites <= COUNT(pric.id)
                   ORDER BY psi.id ASC, pa.id ASC";
             $rs = $DB->get_recordset_sql($sql, $params);
-            $count = 0;
-            foreach ($rs as $completion) {
-                // NOTE: this should not return many records because this
-                // should be called with userid parameter from event observers.
-                $record = new stdClass();
-                $record->itemid = $completion->itemid;
-                $record->allocationid = $completion->allocationid;
-                $record->timecompleted = time(); // Use real time, we are not in a transaction here.
-                $DB->insert_record('enrol_programs_completions', $record);
-                $count++;
+
+            // Group prerequisites by itemid and allocationid.
+            $candidates = [];
+            foreach ($rs as $row) {
+                $key = $row->itemid . '_' . $row->allocationid;
+                if (!isset($candidates[$key])) {
+                    $candidates[$key] = [
+                        'itemid' => $row->itemid,
+                        'allocationid' => $row->allocationid,
+                        'minprerequisites' => (int)$row->minprerequisites,
+                        'setseqjson' => $row->setseqjson,
+                        'count' => 0,
+                        'credits' => 0.0,
+                        'points' => 0,
+                    ];
+                }
+
+                $candidates[$key]['count']++;
+
+                // Extract credits and points from prerequisite course item.
+                $credits = 0.0;
+                $points = 0;
+                if (!empty($row->preseqjson)) {
+                    $preseq = json_decode($row->preseqjson);
+                    if ($preseq) {
+                        if (!empty($preseq->credithours)) {
+                            $credits = (float)$preseq->credithours;
+                        }
+                        if (!empty($preseq->points)) {
+                            $points = (int)$preseq->points;
+                        }
+                    }
+                }
+                // Fallback to trophy_bridge if not in preseqjson.
+                if ($credits == 0.0 && $points == 0 && !empty($row->courseid)) {
+                    $trewards = \enrol_programs\local\trophy_bridge::get_course_rewards((int)$row->courseid);
+                    $credits = $trewards->credithours;
+                    $points = $trewards->points;
+                }
+
+                $candidates[$key]['credits'] += $credits;
+                $candidates[$key]['points'] += $points;
             }
             $rs->close();
+
+            $count = 0;
+            foreach ($candidates as $cand) {
+                $setseq = !empty($cand['setseqjson']) ? json_decode($cand['setseqjson']) : null;
+                $rule = $setseq->completionrule ?? set::COMPLETION_RULE_COURSES;
+                $mincredits = (float)($setseq->mincredits ?? 0.0);
+                $minpoints = (int)($setseq->minpoints ?? 0);
+                $minreq = $cand['minprerequisites'];
+
+                $completed = false;
+                if ($rule === set::COMPLETION_RULE_CREDITS && $mincredits > 0) {
+                    $completed = ($cand['credits'] >= $mincredits);
+                } else if ($rule === set::COMPLETION_RULE_POINTS && $minpoints > 0) {
+                    $completed = ($cand['points'] >= $minpoints);
+                } else if ($rule === set::COMPLETION_RULE_BOTH_COURSES_CREDITS) {
+                    $completed = ($cand['count'] >= $minreq && $cand['credits'] >= $mincredits);
+                } else if ($rule === set::COMPLETION_RULE_BOTH_COURSES_POINTS) {
+                    $completed = ($cand['count'] >= $minreq && $cand['points'] >= $minpoints);
+                } else {
+                    $completed = ($cand['count'] >= $minreq);
+                }
+
+                if ($completed) {
+                    $record = new stdClass();
+                    $record->itemid = $cand['itemid'];
+                    $record->allocationid = $cand['allocationid'];
+                    $record->timecompleted = time();
+                    $DB->insert_record('enrol_programs_completions', $record);
+                    $count++;
+                }
+            }
 
             if (!$count) {
                 // Stop when nothing found.
@@ -1310,8 +1373,104 @@ final class allocation {
             }
         }
 
-        if (count($courseitemids) != $setitem->minprerequisites) {
-            throw new \moodle_exception('errorselectexactcount', 'enrol_programs', '', $setitem->minprerequisites);
+        $rule = $sequence->completionrule ?? set::COMPLETION_RULE_COURSES;
+        $mincredits = isset($sequence->mincredits) ? (float)$sequence->mincredits : 0.0;
+        $minpoints = isset($sequence->minpoints) ? (int)$sequence->minpoints : 0;
+
+        if ($rule === set::COMPLETION_RULE_CREDITS && $mincredits > 0) {
+            $totalcredits = 0.0;
+            if (!empty($courseitemids)) {
+                list($insql, $inparams) = $DB->get_in_or_equal($courseitemids);
+                $records = $DB->get_records_select('enrol_programs_items', "id $insql", $inparams, '', 'id, courseid, sequencejson');
+                foreach ($records as $rec) {
+                    $cseq = (object)json_decode($rec->sequencejson ?? '{}');
+                    if (isset($cseq->credithours)) {
+                        $totalcredits += (float)$cseq->credithours;
+                    } else if (!empty($rec->courseid)) {
+                        $trophyrewards = trophy_bridge::get_course_rewards($rec->courseid);
+                        $totalcredits += $trophyrewards->credithours;
+                    }
+                }
+            }
+            if ($totalcredits < $mincredits) {
+                $a = new stdClass();
+                $a->selected = rtrim(rtrim(number_format($totalcredits, 2), '0'), '.');
+                $a->required = rtrim(rtrim(number_format($mincredits, 2), '0'), '.');
+                throw new \moodle_exception('errorinsufficientcredits', 'enrol_programs', '', $a);
+            }
+        } else if ($rule === set::COMPLETION_RULE_POINTS && $minpoints > 0) {
+            $totalpoints = 0;
+            if (!empty($courseitemids)) {
+                list($insql, $inparams) = $DB->get_in_or_equal($courseitemids);
+                $records = $DB->get_records_select('enrol_programs_items', "id $insql", $inparams, '', 'id, courseid, sequencejson');
+                foreach ($records as $rec) {
+                    $cseq = (object)json_decode($rec->sequencejson ?? '{}');
+                    if (isset($cseq->points)) {
+                        $totalpoints += (int)$cseq->points;
+                    } else if (!empty($rec->courseid)) {
+                        $trophyrewards = trophy_bridge::get_course_rewards($rec->courseid);
+                        $totalpoints += $trophyrewards->points;
+                    }
+                }
+            }
+            if ($totalpoints < $minpoints) {
+                $a = new stdClass();
+                $a->selected = $totalpoints;
+                $a->required = $minpoints;
+                throw new \moodle_exception('errorinsufficientpoints', 'enrol_programs', '', $a);
+            }
+        } else if ($rule === set::COMPLETION_RULE_BOTH_COURSES_CREDITS) {
+            if (count($courseitemids) < $setitem->minprerequisites) {
+                throw new \moodle_exception('errorselectexactcount', 'enrol_programs', '', $setitem->minprerequisites);
+            }
+            $totalcredits = 0.0;
+            if (!empty($courseitemids)) {
+                list($insql, $inparams) = $DB->get_in_or_equal($courseitemids);
+                $records = $DB->get_records_select('enrol_programs_items', "id $insql", $inparams, '', 'id, courseid, sequencejson');
+                foreach ($records as $rec) {
+                    $cseq = (object)json_decode($rec->sequencejson ?? '{}');
+                    if (isset($cseq->credithours)) {
+                        $totalcredits += (float)$cseq->credithours;
+                    } else if (!empty($rec->courseid)) {
+                        $trophyrewards = trophy_bridge::get_course_rewards($rec->courseid);
+                        $totalcredits += $trophyrewards->credithours;
+                    }
+                }
+            }
+            if ($totalcredits < $mincredits) {
+                $a = new stdClass();
+                $a->selected = rtrim(rtrim(number_format($totalcredits, 2), '0'), '.');
+                $a->required = rtrim(rtrim(number_format($mincredits, 2), '0'), '.');
+                throw new \moodle_exception('errorinsufficientcredits', 'enrol_programs', '', $a);
+            }
+        } else if ($rule === set::COMPLETION_RULE_BOTH_COURSES_POINTS) {
+            if (count($courseitemids) < $setitem->minprerequisites) {
+                throw new \moodle_exception('errorselectexactcount', 'enrol_programs', '', $setitem->minprerequisites);
+            }
+            $totalpoints = 0;
+            if (!empty($courseitemids)) {
+                list($insql, $inparams) = $DB->get_in_or_equal($courseitemids);
+                $records = $DB->get_records_select('enrol_programs_items', "id $insql", $inparams, '', 'id, courseid, sequencejson');
+                foreach ($records as $rec) {
+                    $cseq = (object)json_decode($rec->sequencejson ?? '{}');
+                    if (isset($cseq->points)) {
+                        $totalpoints += (int)$cseq->points;
+                    } else if (!empty($rec->courseid)) {
+                        $trophyrewards = trophy_bridge::get_course_rewards($rec->courseid);
+                        $totalpoints += $trophyrewards->points;
+                    }
+                }
+            }
+            if ($totalpoints < $minpoints) {
+                $a = new stdClass();
+                $a->selected = $totalpoints;
+                $a->required = $minpoints;
+                throw new \moodle_exception('errorinsufficientpoints', 'enrol_programs', '', $a);
+            }
+        } else {
+            if (count($courseitemids) != $setitem->minprerequisites) {
+                throw new \moodle_exception('errorselectexactcount', 'enrol_programs', '', $setitem->minprerequisites);
+            }
         }
 
         $trans = $DB->start_delegated_transaction();

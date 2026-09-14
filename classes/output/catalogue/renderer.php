@@ -75,6 +75,10 @@ class renderer extends \plugin_renderer_base {
 </div>
 EOT;
 
+        $top = program::load_content($program->id);
+        $totalcredits = $top->get_total_available_credits();
+        $totalpoints = $top->get_total_available_points();
+
         $result .= '<dl class="row">';
         $result .= '<dt class="col-3">' . get_string('programstatus', 'enrol_programs') . ':</dt><dd class="col-9">'
             . get_string('errornoallocation', 'enrol_programs') . '</dd>';
@@ -82,6 +86,15 @@ EOT;
             . (isset($program->timeallocationstart) ? userdate($program->timeallocationstart) : $strnotset) . '</dd>';
         $result .= '<dt class="col-3">' . get_string('allocationend', 'enrol_programs') . ':</dt><dd class="col-9">'
             . (isset($program->timeallocationend) ? userdate($program->timeallocationend) : $strnotset) . '</dd>';
+        if ($totalcredits > 0) {
+            $formattedcredits = rtrim(rtrim(number_format($totalcredits, 2), '0'), '.');
+            $result .= '<dt class="col-3">' . get_string('credithours', 'enrol_programs') . ':</dt><dd class="col-9">'
+                . \html_writer::span(get_string('credithours_badge', 'enrol_programs', $formattedcredits), 'badge badge-info bg-info text-white') . '</dd>';
+        }
+        if ($totalpoints > 0) {
+            $result .= '<dt class="col-3">' . get_string('points', 'enrol_programs') . ':</dt><dd class="col-9">'
+                . \html_writer::span(get_string('points_badge', 'enrol_programs', $totalpoints), 'badge badge-warning bg-warning text-dark') . '</dd>';
+        }
         $result .= '</dl>';
 
         $actions = [];
@@ -103,15 +116,17 @@ EOT;
 
         $result .= $this->output->heading(get_string('tabcontent', 'enrol_programs'), 3);
 
-        $result .= $this->render_program_content($program);
+        $result .= $this->render_program_content($program, $top);
 
         return $result;
     }
 
-    protected function render_program_content(stdClass $program): string {
+    protected function render_program_content(stdClass $program, ?top $top = null): string {
         global $DB;
 
-        $top = program::load_content($program->id);
+        if ($top === null) {
+            $top = program::load_content($program->id);
+        }
 
         $rows = [];
         $renderercolumns = function(item $item, $itemdepth) use (&$renderercolumns, &$rows, &$DB): void {
@@ -147,7 +162,9 @@ EOT;
             if ($item instanceof top) {
                 $itemname = $this->output->pix_icon('itemtop', get_string('program', 'enrol_programs'), 'enrol_programs') . '&nbsp;' . $fullname;
             } else if ($item instanceof course) {
-                $itemname = $padding . $this->output->pix_icon('itemcourse', get_string('course'), 'enrol_programs') . $fullname;
+                $badges = \enrol_programs\local\trophy_bridge::render_reward_badges($item->get_rewards());
+                $badgeshtml = $badges ? ' ' . $badges : '';
+                $itemname = $padding . $this->output->pix_icon('itemcourse', get_string('course'), 'enrol_programs') . $fullname . $badgeshtml;
             } else {
                 $itemname = $padding . $this->output->pix_icon('itemset', get_string('set', 'enrol_programs'), 'enrol_programs') . $fullname;
             }

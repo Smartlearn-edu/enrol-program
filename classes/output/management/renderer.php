@@ -322,7 +322,9 @@ class renderer extends \plugin_renderer_base {
             if ($item instanceof top) {
                 $itemname = $output->pix_icon('itemtop', get_string('program', 'enrol_programs'), 'enrol_programs') . '&nbsp;' . $fullname;
             } else if ($item instanceof course) {
-                $itemname = $padding . $output->pix_icon('itemcourse', get_string('course'), 'enrol_programs') . $fullname;
+                $badges = \enrol_programs\local\trophy_bridge::render_reward_badges($item->get_rewards());
+                $badgeshtml = $badges ? ' ' . $badges : '';
+                $itemname = $padding . $output->pix_icon('itemcourse', get_string('course'), 'enrol_programs') . $fullname . $badgeshtml;
             } else {
                 $itemname = $padding . $output->pix_icon('itemset', get_string('set', 'enrol_programs'), 'enrol_programs') . $fullname;
             }

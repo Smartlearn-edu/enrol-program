@@ -128,16 +128,29 @@ EOT;
         if ($pendingforms) {
             foreach ($pendingforms as $setitem) {
                 $minreq = $setitem->get_minprerequisites();
+                $mincredits = $setitem->get_mincredits();
+                $minpoints = $setitem->get_minpoints();
+                $rule = $setitem->get_completionrule();
                 $setname = format_string($setitem->get_fullname());
                 $formurl = new \moodle_url('/enrol/programs/my/select_courses.php');
+                $setid = $setitem->get_id();
 
-                $selectionformhtml .= '<div class="alert alert-info border p-3 mb-4 rounded">';
+                if ($rule === set::COMPLETION_RULE_CREDITS && $mincredits > 0) {
+                    $formattedcredits = rtrim(rtrim(number_format($mincredits, 2), '0'), '.');
+                    $instruction = get_string('selectcredits', 'enrol_programs', $formattedcredits);
+                } else if ($rule === set::COMPLETION_RULE_POINTS && $minpoints > 0) {
+                    $instruction = get_string('selectpoints', 'enrol_programs', $minpoints);
+                } else {
+                    $instruction = get_string('selectncourses', 'enrol_programs', $minreq);
+                }
+
+                $selectionformhtml .= '<div class="alert alert-info border p-3 mb-4 rounded" id="student-choice-box-' . $setid . '">';
                 $selectionformhtml .= '<h4 class="alert-heading font-weight-bold">' . get_string('selectcourses', 'enrol_programs') . ': ' . $setname . '</h4>';
-                $selectionformhtml .= '<p>' . get_string('selectncourses', 'enrol_programs', $minreq) . '</p>';
-                $selectionformhtml .= '<form method="post" action="' . $formurl->out(false) . '">';
+                $selectionformhtml .= '<p class="mb-2">' . $instruction . '</p>';
+                $selectionformhtml .= '<form method="post" action="' . $formurl->out(false) . '" id="student-choice-form-' . $setid . '">';
                 $selectionformhtml .= '<input type="hidden" name="sesskey" value="' . sesskey() . '">';
                 $selectionformhtml .= '<input type="hidden" name="id" value="' . $program->id . '">';
-                $selectionformhtml .= '<input type="hidden" name="setid" value="' . $setitem->get_id() . '">';
+                $selectionformhtml .= '<input type="hidden" name="setid" value="' . $setid . '">';
                 $selectionformhtml .= '<div class="form-group my-3">';
 
                 foreach ($setitem->get_children() as $child) {
@@ -145,17 +158,71 @@ EOT;
                         $childname = format_string($child->get_fullname());
                         $cid = $child->get_id();
                         $checkboxid = 'course_choice_' . $cid;
-                        $selectionformhtml .= '<div class="custom-control custom-checkbox my-2">';
-                        $selectionformhtml .= '<input type="checkbox" class="custom-control-input" id="' . $checkboxid . '" name="courses[]" value="' . $cid . '">';
-                        $selectionformhtml .= '<label class="custom-control-label" for="' . $checkboxid . '">' . $childname . '</label>';
+                        $rewards = $child->get_rewards();
+                        $badges = \enrol_programs\local\trophy_bridge::render_reward_badges($rewards);
+                        $badgeshtml = $badges ? ' ' . $badges : '';
+                        $selectionformhtml .= '<div class="custom-control custom-checkbox my-2 d-flex align-items-center">';
+                        $selectionformhtml .= '<input type="checkbox" class="custom-control-input student-choice-cb" id="' . $checkboxid . '" name="courses[]" value="' . $cid . '" data-credits="' . $rewards->credithours . '" data-points="' . $rewards->points . '">';
+                        $selectionformhtml .= '<label class="custom-control-label font-weight-normal" for="' . $checkboxid . '">' . $childname . $badgeshtml . '</label>';
                         $selectionformhtml .= '</div>';
                     }
                 }
 
                 $selectionformhtml .= '</div>';
-                $selectionformhtml .= '<button type="submit" class="btn btn-primary">' . get_string('confirmselection', 'enrol_programs') . '</button>';
+
+                // Live dynamic selection summary tracker.
+                $selectionformhtml .= '<div class="alert alert-light border d-flex flex-wrap align-items-center justify-content-between p-2 my-2" id="choice-summary-' . $setid . '">';
+                $selectionformhtml .= '<div>';
+                $selectionformhtml .= '<span class="mr-3 font-weight-bold">Selected: <span class="sel-count-val">0</span> Courses</span>';
+                if ($mincredits > 0 || $rule === set::COMPLETION_RULE_CREDITS) {
+                    $reqcr = rtrim(rtrim(number_format($mincredits, 2), '0'), '.');
+                    $selectionformhtml .= '<span class="mr-3 text-primary font-weight-bold">🎓 <span class="sel-credits-val">0.0</span> / ' . $reqcr . ' Credits</span>';
+                }
+                if ($minpoints > 0 || $rule === set::COMPLETION_RULE_POINTS) {
+                    $selectionformhtml .= '<span class="mr-3 text-warning font-weight-bold">🪙 <span class="sel-points-val">0</span> / ' . $minpoints . ' pts</span>';
+                }
+                $selectionformhtml .= '</div>';
+                $selectionformhtml .= '</div>';
+
+                $selectionformhtml .= '<button type="submit" class="btn btn-primary mt-2" id="btn-submit-choice-' . $setid . '">' . get_string('confirmselection', 'enrol_programs') . '</button>';
                 $selectionformhtml .= '</form>';
                 $selectionformhtml .= '</div>';
+
+                // Inline JS to update counters dynamically.
+                $selectionformhtml .= '<script>
+                (function() {
+                    function initCounters() {
+                        var box = document.getElementById("student-choice-box-' . $setid . '");
+                        if (!box) return;
+                        var cbs = box.querySelectorAll(".student-choice-cb");
+                        function updateCounters() {
+                            var count = 0, credits = 0.0, points = 0;
+                            cbs.forEach(function(cb) {
+                                if (cb.checked) {
+                                    count++;
+                                    credits += parseFloat(cb.getAttribute("data-credits") || 0);
+                                    points += parseInt(cb.getAttribute("data-points") || 0, 10);
+                                }
+                            });
+                            var cntEl = box.querySelector(".sel-count-val");
+                            if (cntEl) cntEl.textContent = count;
+                            var crEl = box.querySelector(".sel-credits-val");
+                            if (crEl) crEl.textContent = (Math.round(credits * 100) / 100).toFixed(1);
+                            var ptEl = box.querySelector(".sel-points-val");
+                            if (ptEl) ptEl.textContent = points;
+                        }
+                        cbs.forEach(function(cb) {
+                            cb.addEventListener("change", updateCounters);
+                        });
+                        updateCounters();
+                    }
+                    if (document.readyState === "loading") {
+                        document.addEventListener("DOMContentLoaded", initCounters);
+                    } else {
+                        initCounters();
+                    }
+                })();
+                </script>';
             }
         }
 
@@ -224,7 +291,9 @@ EOT;
             if ($item instanceof top) {
                 $itemname = $this->output->pix_icon('itemtop', get_string('program', 'enrol_programs'), 'enrol_programs') . '&nbsp;' . $fullname;
             } else if ($item instanceof course) {
-                $itemname = $padding . $this->output->pix_icon('itemcourse', get_string('course'), 'enrol_programs') . $fullname;
+                $badges = \enrol_programs\local\trophy_bridge::render_reward_badges($item->get_rewards());
+                $badgeshtml = $badges ? ' ' . $badges : '';
+                $itemname = $padding . $this->output->pix_icon('itemcourse', get_string('course'), 'enrol_programs') . $fullname . $badgeshtml;
             } else {
                 $itemname = $padding . $this->output->pix_icon('itemset', get_string('set', 'enrol_programs'), 'enrol_programs') . $fullname;
             }

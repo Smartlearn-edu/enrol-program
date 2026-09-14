@@ -177,13 +177,17 @@ final class top extends set {
     }
 
     /**
-     * Add new course item to given parent set.
+     * Add course item to given parent set.
      *
      * @param set $parent
      * @param int $courseid
+     * @param float $credithours
+     * @param int $points
+     * @param ?string $medaltype
+     * @param int $medalreward
      * @return course
      */
-    public function append_course(set $parent, int $courseid): course {
+    public function append_course(set $parent, int $courseid, float $credithours = 0.0, int $points = 0, ?string $medaltype = null, int $medalreward = 0): course {
         global $DB;
 
         if ($parent->programid != $this->programid) {
@@ -195,6 +199,18 @@ final class top extends set {
 
         $course = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
 
+        $seqdata = [];
+        if ($credithours > 0) {
+            $seqdata['credithours'] = $credithours;
+        }
+        if ($points > 0) {
+            $seqdata['points'] = $points;
+        }
+        if (!empty($medaltype)) {
+            $seqdata['medaltype'] = $medaltype;
+            $seqdata['medalreward'] = $medalreward > 0 ? $medalreward : 1;
+        }
+
         $record = [
             'id' => null,
             'programid' => (string)$this->programid,
@@ -202,13 +218,23 @@ final class top extends set {
             'courseid' => (string)$course->id,
             'previtemid' => null,
             'fullname' => $course->fullname,
-            'sequencejson' => util::json_encode([]),
+            'sequencejson' => util::json_encode($seqdata),
             'minprerequisites' => '1',
         ];
         $fakerecords = [];
         $fakeprerequisites = [];
         /** @var course $item */
         $item = course::init_from_record((object)$record, null, $fakerecords, $fakeprerequisites);
+
+        if ($credithours > 0) {
+            $item->set_credithours($credithours);
+        }
+        if ($points > 0) {
+            $item->set_points($points);
+        }
+        if (!empty($medaltype)) {
+            $item->set_medal($medaltype, $medalreward > 0 ? $medalreward : 1);
+        }
 
         $trans = $DB->start_delegated_transaction();
         $item->id = (string)$DB->insert_record('enrol_programs_items', (object)$item->get_record());
@@ -234,9 +260,12 @@ final class top extends set {
      * @param string $fullname
      * @param string $sequencetype
      * @param int $minprerequisites
+     * @param string $completionrule
+     * @param float $mincredits
+     * @param int $minpoints
      * @return set
      */
-    public function append_set(set $parent, string $fullname, string $sequencetype, int $minprerequisites = 1): set {
+    public function append_set(set $parent, string $fullname, string $sequencetype, int $minprerequisites = 1, string $completionrule = set::COMPLETION_RULE_COURSES, float $mincredits = 0.0, int $minpoints = 0): set {
         global $DB;
 
         if ($parent->programid != $this->programid) {
@@ -262,6 +291,15 @@ final class top extends set {
             'children' => [],
             'type' => $sequencetype,
         ];
+        if ($completionrule !== set::COMPLETION_RULE_COURSES) {
+            $sequence['completionrule'] = $completionrule;
+            if ($mincredits > 0) {
+                $sequence['mincredits'] = $mincredits;
+            }
+            if ($minpoints > 0) {
+                $sequence['minpoints'] = $minpoints;
+            }
+        }
 
         $record = [
             'id' => null,
@@ -303,9 +341,12 @@ final class top extends set {
      * @param string $fullname ignored in case of top item
      * @param string $sequencetype
      * @param int $minprerequisites
+     * @param string $completionrule
+     * @param float $mincredits
+     * @param int $minpoints
      * @return set
      */
-    public function update_set(set $set, string $fullname, string $sequencetype, int $minprerequisites = 1): set {
+    public function update_set(set $set, string $fullname, string $sequencetype, int $minprerequisites = 1, string $completionrule = set::COMPLETION_RULE_COURSES, float $mincredits = 0.0, int $minpoints = 0): set {
         global $DB;
 
         if ($set->programid != $this->programid) {
@@ -339,6 +380,8 @@ final class top extends set {
             }
             $set->minprerequisites = $minprerequisites;
         }
+
+        $set->set_completionrule($completionrule, $mincredits, $minpoints);
 
         $trans = $DB->start_delegated_transaction();
         $DB->update_record('enrol_programs_items', (object)$set->get_record());

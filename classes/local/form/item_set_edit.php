@@ -48,12 +48,38 @@ final class item_set_edit extends \local_openlms\dialog_form {
         $mform->addElement('select', 'sequencetype', get_string('sequencetype', 'enrol_programs'), $stypes);
         $mform->setDefault('sequencetype', $set->get_sequencetype());
 
+        $crules = set::get_completionrule_types();
+        $mform->addElement('select', 'completionrule', get_string('completionrule', 'enrol_programs'), $crules);
+        $mform->setDefault('completionrule', $set->get_completionrule());
+        $mform->hideIf('completionrule', 'sequencetype', 'eq', set::SEQUENCE_TYPE_ALLINORDER);
+        $mform->hideIf('completionrule', 'sequencetype', 'eq', set::SEQUENCE_TYPE_ALLINANYORDER);
+
         $mform->addElement('text', 'minprerequisites', get_string('minprerequisites', 'enrol_programs'));
         $mform->setType('minprerequisites', PARAM_INT);
         $mform->setDefault('minprerequisites', 1);
         $mform->hideIf('minprerequisites', 'sequencetype', 'eq', set::SEQUENCE_TYPE_ALLINORDER);
         $mform->hideIf('minprerequisites', 'sequencetype', 'eq', set::SEQUENCE_TYPE_ALLINANYORDER);
+        $mform->hideIf('minprerequisites', 'completionrule', 'eq', set::COMPLETION_RULE_CREDITS);
+        $mform->hideIf('minprerequisites', 'completionrule', 'eq', set::COMPLETION_RULE_POINTS);
         $mform->setDefault('minprerequisites', $set->get_minprerequisites());
+
+        $mform->addElement('text', 'mincredits', get_string('mincredits', 'enrol_programs'));
+        $mform->setType('mincredits', PARAM_RAW);
+        $mform->setDefault('mincredits', $set->get_mincredits() > 0 ? (string)$set->get_mincredits() : '0.0');
+        $mform->hideIf('mincredits', 'sequencetype', 'eq', set::SEQUENCE_TYPE_ALLINORDER);
+        $mform->hideIf('mincredits', 'sequencetype', 'eq', set::SEQUENCE_TYPE_ALLINANYORDER);
+        $mform->hideIf('mincredits', 'completionrule', 'eq', set::COMPLETION_RULE_COURSES);
+        $mform->hideIf('mincredits', 'completionrule', 'eq', set::COMPLETION_RULE_POINTS);
+        $mform->hideIf('mincredits', 'completionrule', 'eq', set::COMPLETION_RULE_BOTH_COURSES_POINTS);
+
+        $mform->addElement('text', 'minpoints', get_string('minpoints', 'enrol_programs'));
+        $mform->setType('minpoints', PARAM_INT);
+        $mform->setDefault('minpoints', $set->get_minpoints());
+        $mform->hideIf('minpoints', 'sequencetype', 'eq', set::SEQUENCE_TYPE_ALLINORDER);
+        $mform->hideIf('minpoints', 'sequencetype', 'eq', set::SEQUENCE_TYPE_ALLINANYORDER);
+        $mform->hideIf('minpoints', 'completionrule', 'eq', set::COMPLETION_RULE_COURSES);
+        $mform->hideIf('minpoints', 'completionrule', 'eq', set::COMPLETION_RULE_CREDITS);
+        $mform->hideIf('minpoints', 'completionrule', 'eq', set::COMPLETION_RULE_BOTH_COURSES_CREDITS);
 
         $mform->addElement('hidden', 'id');
         $mform->setType('id', PARAM_INT);
@@ -69,8 +95,21 @@ final class item_set_edit extends \local_openlms\dialog_form {
             $errors['fullname'] = get_string('required');
         }
         if ($data['sequencetype'] === set::SEQUENCE_TYPE_ATLEAST || $data['sequencetype'] === set::SEQUENCE_TYPE_STUDENTCHOICE) {
-            if ($data['minprerequisites'] <= 0) {
-                $errors['minprerequisites'] = get_string('required');
+            $rule = $data['completionrule'] ?? set::COMPLETION_RULE_COURSES;
+            if ($rule === set::COMPLETION_RULE_COURSES || $rule === set::COMPLETION_RULE_BOTH_COURSES_CREDITS || $rule === set::COMPLETION_RULE_BOTH_COURSES_POINTS) {
+                if ($data['minprerequisites'] <= 0) {
+                    $errors['minprerequisites'] = get_string('required');
+                }
+            }
+            if ($rule === set::COMPLETION_RULE_CREDITS || $rule === set::COMPLETION_RULE_BOTH_COURSES_CREDITS) {
+                if (empty($data['mincredits']) || !is_numeric($data['mincredits']) || (float)$data['mincredits'] <= 0) {
+                    $errors['mincredits'] = get_string('required');
+                }
+            }
+            if ($rule === set::COMPLETION_RULE_POINTS || $rule === set::COMPLETION_RULE_BOTH_COURSES_POINTS) {
+                if (empty($data['minpoints']) || (int)$data['minpoints'] <= 0) {
+                    $errors['minpoints'] = get_string('required');
+                }
             }
         }
 
