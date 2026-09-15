@@ -235,11 +235,13 @@ class renderer extends \plugin_renderer_base {
             $result .= $this->output->single_button($this->page->url, $cancelmove, 'get');
         }
 
+        $hasrewards = \enrol_programs\local\trophy_bridge::program_has_rewards($top);
+
         $rows = [];
         $hasactions = false;
         $output = $this->output;
         $renderercolumns = function(item $item, int $itemdepth, int $position, ?set $parent, bool $showtargets) use(&$renderercolumns, &$rows, $canedit, &$hasactions,
-            &$output, $dialogformoutput, &$movetargetsfor, $movetargetsforname): void {
+            &$output, $dialogformoutput, &$movetargetsfor, $movetargetsforname, $hasrewards): void {
             $fullname = $item->get_fullname();
             $id = $item->get_id();
             $padding = str_repeat('&nbsp;', $itemdepth * 6);
@@ -323,7 +325,9 @@ class renderer extends \plugin_renderer_base {
             if ($item instanceof top) {
                 $itemname = $output->pix_icon('itemtop', get_string('program', 'enrol_programs'), 'enrol_programs') . '&nbsp;' . $fullname;
             } else if ($item instanceof course) {
-                $rewardsinfo = \enrol_programs\local\trophy_bridge::render_reward_badges($item->get_rewards());
+                if ($hasrewards) {
+                    $rewardsinfo = \enrol_programs\local\trophy_bridge::render_reward_badges($item->get_rewards());
+                }
                 $itemname = $padding . $output->pix_icon('itemcourse', get_string('course'), 'enrol_programs') . $fullname;
             } else {
                 $itemname = $padding . $output->pix_icon('itemset', get_string('set', 'enrol_programs'), 'enrol_programs') . $fullname;
@@ -338,9 +342,9 @@ class renderer extends \plugin_renderer_base {
                 $a = (object)['item' => $movetargetsforname, 'target' => $item->get_fullname()];
                 $movehere = get_string('movebefore', 'enrol_programs', $a);
                 $target = $padding . \html_writer::link($turl, $movehere, ['class' => 'movehere']);
-                $rows[]  = [$target, '', '', ''];
+                $rows[]  = $hasrewards ? [$target, '', '', ''] : [$target, '', ''];
             }
-            $rows[] = [$itemname, $rewardsinfo, $completion, implode('', $actions)];
+            $rows[] = $hasrewards ? [$itemname, $rewardsinfo, $completion, implode('', $actions)] : [$itemname, $completion, implode('', $actions)];
 
             $children = $item->get_children();
             if ($children) {
@@ -355,7 +359,7 @@ class renderer extends \plugin_renderer_base {
                 $a = (object)['item' => $movetargetsforname, 'target' => $item->get_fullname()];
                 $movehere = get_string('moveinto', 'enrol_programs', $a);
                 $target = $childpadding . \html_writer::link($turl, $movehere, ['class' => 'movehere']);
-                $rows[]  = [$target, '', '', ''];
+                $rows[]  = $hasrewards ? [$target, '', '', ''] : [$target, '', ''];
             }
 
             if ($canedit && $targetpost) {
@@ -364,18 +368,18 @@ class renderer extends \plugin_renderer_base {
                 $a = (object)['item' => $movetargetsforname, 'target' => $item->get_fullname()];
                 $movehere = get_string('moveafter', 'enrol_programs', $a);
                 $target = $padding . \html_writer::link($turl, $movehere, ['class' => 'movehere']);
-                $rows[]  = [$target, '', '', ''];
+                $rows[]  = $hasrewards ? [$target, '', '', ''] : [$target, '', ''];
             }
         };
         $renderercolumns($top, 0, 0, null, isset($movetargetsfor));
 
         $table = new \html_table();
-        $table->head = [
-            get_string('item', 'enrol_programs'),
-            get_string('rewardscolumn', 'enrol_programs'),
-            get_string('sequencetype', 'enrol_programs'),
-            get_string('actions'),
-        ];
+        $table->head = [get_string('item', 'enrol_programs')];
+        if ($hasrewards) {
+            $table->head[] = get_string('rewardscolumn', 'enrol_programs');
+        }
+        $table->head[] = get_string('sequencetype', 'enrol_programs');
+        $table->head[] = get_string('actions');
         $table->id = 'program_content';
         $table->attributes['class'] = 'admintable generaltable';
         $table->data = $rows;

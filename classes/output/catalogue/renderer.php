@@ -128,8 +128,10 @@ EOT;
             $top = program::load_content($program->id);
         }
 
+        $hasrewards = \enrol_programs\local\trophy_bridge::program_has_rewards($top);
+
         $rows = [];
-        $renderercolumns = function(item $item, $itemdepth) use (&$renderercolumns, &$rows, &$DB): void {
+        $renderercolumns = function(item $item, $itemdepth) use (&$renderercolumns, &$rows, &$DB, $hasrewards): void {
             $fullname = $item->get_fullname();
             $id = $item->get_id();
             $padding = str_repeat('&nbsp;', $itemdepth * 6);
@@ -163,13 +165,19 @@ EOT;
             if ($item instanceof top) {
                 $itemname = $this->output->pix_icon('itemtop', get_string('program', 'enrol_programs'), 'enrol_programs') . '&nbsp;' . $fullname;
             } else if ($item instanceof course) {
-                $rewardsinfo = \enrol_programs\local\trophy_bridge::render_reward_badges($item->get_rewards());
+                if ($hasrewards) {
+                    $rewardsinfo = \enrol_programs\local\trophy_bridge::render_reward_badges($item->get_rewards());
+                }
                 $itemname = $padding . $this->output->pix_icon('itemcourse', get_string('course'), 'enrol_programs') . $fullname;
             } else {
                 $itemname = $padding . $this->output->pix_icon('itemset', get_string('set', 'enrol_programs'), 'enrol_programs') . $fullname;
             }
 
-            $row = [$itemname, $rewardsinfo, $completiontype];
+            if ($hasrewards) {
+                $row = [$itemname, $rewardsinfo, $completiontype];
+            } else {
+                $row = [$itemname, $completiontype];
+            }
 
             $rows[] = $row;
 
@@ -180,11 +188,11 @@ EOT;
         $renderercolumns($top, 0);
 
         $table = new \html_table();
-        $table->head = [
-            get_string('item', 'enrol_programs'),
-            get_string('rewardscolumn', 'enrol_programs'),
-            get_string('sequencetype', 'enrol_programs'),
-        ];
+        $table->head = [get_string('item', 'enrol_programs')];
+        if ($hasrewards) {
+            $table->head[] = get_string('rewardscolumn', 'enrol_programs');
+        }
+        $table->head[] = get_string('sequencetype', 'enrol_programs');
         $table->id = 'program_content';
         $table->attributes['class'] = 'admintable generaltable';
         $table->data = $rows;

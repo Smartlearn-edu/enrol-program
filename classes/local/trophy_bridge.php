@@ -133,11 +133,17 @@ class trophy_bridge {
     /**
      * Render visual badge HTML for a course's rewards.
      *
-     * @param stdClass $rewards Object containing credithours, points, medaltype, medalreward
+     * @param stdClass|array|null $rewards Object containing credithours, points, medaltype, medalreward
      * @param string $size CSS size for icons
      * @return string HTML containing badge spans
      */
-    public static function render_reward_badges(stdClass $rewards, string $size = '16px'): string {
+    public static function render_reward_badges($rewards, string $size = '16px'): string {
+        if (is_array($rewards)) {
+            $rewards = (object)$rewards;
+        } else if (!($rewards instanceof stdClass)) {
+            return '';
+        }
+
         $html = '';
 
         if (!empty($rewards->credithours) && $rewards->credithours > 0) {
@@ -170,5 +176,32 @@ class trophy_bridge {
         }
 
         return $html;
+    }
+
+    /**
+     * Check if a program content tree contains any credit hours, points, or trophy rewards.
+     *
+     * @param \enrol_programs\local\content\item $top
+     * @return bool
+     */
+    public static function program_has_rewards(\enrol_programs\local\content\item $top): bool {
+        if ($top instanceof \enrol_programs\local\content\course) {
+            $rewards = $top->get_rewards();
+            if (!empty($rewards->credithours) || !empty($rewards->points) || !empty($rewards->medaltype)) {
+                return true;
+            }
+        } else if ($top instanceof \enrol_programs\local\content\set) {
+            if ($top->get_mincredits() > 0 || $top->get_minpoints() > 0) {
+                return true;
+            }
+        }
+
+        foreach ($top->get_children() as $child) {
+            if (self::program_has_rewards($child)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

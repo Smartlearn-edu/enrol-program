@@ -226,11 +226,12 @@ EOT;
             }
         }
 
+        $hasrewards = \enrol_programs\local\trophy_bridge::program_has_rewards($top);
+
         $rows = [];
-        $renderercolumns = function(item $item, $itemdepth, ?set $parent = null) use (&$renderercolumns, &$rows, $allocation, &$DB, $canedit, $program): void {
+        $renderercolumns = function(item $item, $itemdepth, ?set $parent = null) use (&$renderercolumns, &$rows, $allocation, &$DB, $canedit, $program, $hasrewards): void {
             $fullname = $item->get_fullname();
-            $id = $item->get_id();
-            $padding = str_repeat('&nbsp;', $itemdepth * 6);
+            $padding = str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', $itemdepth);
 
             $completiontype = '';
             if ($item instanceof set) {
@@ -292,22 +293,25 @@ EOT;
             if ($item instanceof top) {
                 $itemname = $this->output->pix_icon('itemtop', get_string('program', 'enrol_programs'), 'enrol_programs') . '&nbsp;' . $fullname;
             } else if ($item instanceof course) {
-                $rewardsinfo = \enrol_programs\local\trophy_bridge::render_reward_badges($item->get_rewards());
+                if ($hasrewards) {
+                    $rewardsinfo = \enrol_programs\local\trophy_bridge::render_reward_badges($item->get_rewards());
+                }
                 $itemname = $padding . $this->output->pix_icon('itemcourse', get_string('course'), 'enrol_programs') . $fullname;
             } else {
                 $itemname = $padding . $this->output->pix_icon('itemset', get_string('set', 'enrol_programs'), 'enrol_programs') . $fullname;
             }
-
-            $row = [$itemname, $rewardsinfo, $completiontype];
 
             $completioninfo = '';
             $completion = $DB->get_record('enrol_programs_completions', ['itemid' => $item->get_id(), 'allocationid' => $allocation->id]);
             if ($completion) {
                 $completioninfo = userdate($completion->timecompleted, get_string('strftimedatetimeshort'));
             }
-            $row[] = $completioninfo;
 
-            $rows[] = $row;
+            if ($hasrewards) {
+                $rows[] = [$itemname, $rewardsinfo, $completiontype, $completioninfo];
+            } else {
+                $rows[] = [$itemname, $completiontype, $completioninfo];
+            }
 
             foreach ($item->get_children() as $child) {
                 $renderercolumns($child, $itemdepth + 1, ($item instanceof set ? $item : null));
@@ -316,12 +320,12 @@ EOT;
         $renderercolumns($top, 0, null);
 
         $table = new \html_table();
-        $table->head = [
-            get_string('item', 'enrol_programs'),
-            get_string('rewardscolumn', 'enrol_programs'),
-            get_string('sequencetype', 'enrol_programs'),
-            get_string('completiondate', 'enrol_programs'),
-        ];
+        $table->head = [get_string('item', 'enrol_programs')];
+        if ($hasrewards) {
+            $table->head[] = get_string('rewardscolumn', 'enrol_programs');
+        }
+        $table->head[] = get_string('sequencetype', 'enrol_programs');
+        $table->head[] = get_string('completiondate', 'enrol_programs');
         $table->id = 'program_content';
         $table->attributes['class'] = 'admintable generaltable';
         $table->data = $rows;
