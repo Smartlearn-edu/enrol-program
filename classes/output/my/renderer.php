@@ -288,17 +288,17 @@ EOT;
                 }
             }
 
+            $rewardsinfo = '';
             if ($item instanceof top) {
                 $itemname = $this->output->pix_icon('itemtop', get_string('program', 'enrol_programs'), 'enrol_programs') . '&nbsp;' . $fullname;
             } else if ($item instanceof course) {
-                $badges = \enrol_programs\local\trophy_bridge::render_reward_badges($item->get_rewards());
-                $badgeshtml = $badges ? ' ' . $badges : '';
-                $itemname = $padding . $this->output->pix_icon('itemcourse', get_string('course'), 'enrol_programs') . $fullname . $badgeshtml;
+                $rewardsinfo = \enrol_programs\local\trophy_bridge::render_reward_badges($item->get_rewards());
+                $itemname = $padding . $this->output->pix_icon('itemcourse', get_string('course'), 'enrol_programs') . $fullname;
             } else {
                 $itemname = $padding . $this->output->pix_icon('itemset', get_string('set', 'enrol_programs'), 'enrol_programs') . $fullname;
             }
 
-            $row = [$itemname, $completiontype];
+            $row = [$itemname, $rewardsinfo, $completiontype];
 
             $completioninfo = '';
             $completion = $DB->get_record('enrol_programs_completions', ['itemid' => $item->get_id(), 'allocationid' => $allocation->id]);
@@ -316,8 +316,12 @@ EOT;
         $renderercolumns($top, 0, null);
 
         $table = new \html_table();
-        $table->head = [get_string('item', 'enrol_programs'), get_string('sequencetype', 'enrol_programs')];
-        $table->head[] = get_string('completiondate', 'enrol_programs');
+        $table->head = [
+            get_string('item', 'enrol_programs'),
+            get_string('rewardscolumn', 'enrol_programs'),
+            get_string('sequencetype', 'enrol_programs'),
+            get_string('completiondate', 'enrol_programs'),
+        ];
         $table->id = 'program_content';
         $table->attributes['class'] = 'admintable generaltable';
         $table->data = $rows;

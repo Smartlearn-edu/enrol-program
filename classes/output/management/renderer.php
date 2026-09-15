@@ -319,12 +319,12 @@ class renderer extends \plugin_renderer_base {
                 }
             }
 
+            $rewardsinfo = '';
             if ($item instanceof top) {
                 $itemname = $output->pix_icon('itemtop', get_string('program', 'enrol_programs'), 'enrol_programs') . '&nbsp;' . $fullname;
             } else if ($item instanceof course) {
-                $badges = \enrol_programs\local\trophy_bridge::render_reward_badges($item->get_rewards());
-                $badgeshtml = $badges ? ' ' . $badges : '';
-                $itemname = $padding . $output->pix_icon('itemcourse', get_string('course'), 'enrol_programs') . $fullname . $badgeshtml;
+                $rewardsinfo = \enrol_programs\local\trophy_bridge::render_reward_badges($item->get_rewards());
+                $itemname = $padding . $output->pix_icon('itemcourse', get_string('course'), 'enrol_programs') . $fullname;
             } else {
                 $itemname = $padding . $output->pix_icon('itemset', get_string('set', 'enrol_programs'), 'enrol_programs') . $fullname;
             }
@@ -338,9 +338,9 @@ class renderer extends \plugin_renderer_base {
                 $a = (object)['item' => $movetargetsforname, 'target' => $item->get_fullname()];
                 $movehere = get_string('movebefore', 'enrol_programs', $a);
                 $target = $padding . \html_writer::link($turl, $movehere, ['class' => 'movehere']);
-                $rows[]  = [$target, '', ''];
+                $rows[]  = [$target, '', '', ''];
             }
-            $rows[] = [$itemname, $completion, implode('', $actions)];
+            $rows[] = [$itemname, $rewardsinfo, $completion, implode('', $actions)];
 
             $children = $item->get_children();
             if ($children) {
@@ -355,7 +355,7 @@ class renderer extends \plugin_renderer_base {
                 $a = (object)['item' => $movetargetsforname, 'target' => $item->get_fullname()];
                 $movehere = get_string('moveinto', 'enrol_programs', $a);
                 $target = $childpadding . \html_writer::link($turl, $movehere, ['class' => 'movehere']);
-                $rows[]  = [$target, '', ''];
+                $rows[]  = [$target, '', '', ''];
             }
 
             if ($canedit && $targetpost) {
@@ -364,13 +364,18 @@ class renderer extends \plugin_renderer_base {
                 $a = (object)['item' => $movetargetsforname, 'target' => $item->get_fullname()];
                 $movehere = get_string('moveafter', 'enrol_programs', $a);
                 $target = $padding . \html_writer::link($turl, $movehere, ['class' => 'movehere']);
-                $rows[]  = [$target, '', ''];
+                $rows[]  = [$target, '', '', ''];
             }
         };
         $renderercolumns($top, 0, 0, null, isset($movetargetsfor));
 
         $table = new \html_table();
-        $table->head = [get_string('item', 'enrol_programs'), get_string('sequencetype', 'enrol_programs'), get_string('actions')];
+        $table->head = [
+            get_string('item', 'enrol_programs'),
+            get_string('rewardscolumn', 'enrol_programs'),
+            get_string('sequencetype', 'enrol_programs'),
+            get_string('actions'),
+        ];
         $table->id = 'program_content';
         $table->attributes['class'] = 'admintable generaltable';
         $table->data = $rows;
