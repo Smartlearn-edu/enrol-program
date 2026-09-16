@@ -1093,6 +1093,7 @@ final class allocation {
 
         $allocations = $DB->get_records('enrol_programs_allocations', ['userid' => $userid]);
         foreach ($allocations as $allocation) {
+            allocation_calendar_event::delete_allocation_calendar_events($allocation);
             self::make_snapshot($allocation->id, 'user_deleted');
             $DB->delete_records('enrol_programs_completions', ['allocationid' => $allocation->id]);
             $DB->delete_records('enrol_programs_selections', ['allocationid' => $allocation->id]);

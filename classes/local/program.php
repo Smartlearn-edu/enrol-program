@@ -622,6 +622,7 @@ final class program {
             $DB->delete_records('enrol_programs_selections', ['courseitemid' => $item->id]);
         }
         unset($items);
+        allocation_calendar_event::delete_program_calendar_events($program->id);
         $DB->delete_records('enrol_programs_allocations', ['programid' => $program->id]);
         $sources = $DB->get_records('enrol_programs_sources', ['programid' => $program->id]);
         foreach ($sources as $source) {

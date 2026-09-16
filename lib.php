@@ -171,14 +171,34 @@ function enrol_programs_pre_course_category_delete(\stdClass $category) {
 function enrol_programs_core_calendar_provide_event_action(calendar_event $event,
         \core_calendar\action_factory $factory, $userid = 0) {
 
-    global $USER, $DB;
+    global $USER, $DB, $CFG;
     if (empty($userid)) {
         $userid = $USER->id;
     }
 
     // The event object (core_calendar\local\event\entities\event) passed does not include an instance property so we need to pull the DB record.
-    $event = $DB->get_record('event', ['id' => $event->id], '*', MUST_EXIST);
-    $allocation = $DB->get_record('enrol_programs_allocations', ['id' => $event->instance], '*', MUST_EXIST);
+    $eventrecord = $DB->get_record('event', ['id' => $event->id]);
+    if (!$eventrecord || empty($eventrecord->instance)) {
+        return null;
+    }
+
+    $allocation = $DB->get_record('enrol_programs_allocations', ['id' => $eventrecord->instance]);
+    if (!$allocation) {
+        // Orphaned calendar event whose allocation was deleted. Clean it up so it doesn't cause issues again.
+        try {
+            require_once($CFG->dirroot . '/calendar/lib.php');
+            $calendarevent = \calendar_event::load($eventrecord);
+            $calendarevent->delete(false);
+        } catch (\Throwable $e) {
+            $DB->delete_records('event', ['id' => $eventrecord->id]);
+        }
+        return null;
+    }
+
+    $program = $DB->get_record('enrol_programs_programs', ['id' => $allocation->programid]);
+    if (!$program || !empty($program->archived)) {
+        return null;
+    }
 
     return $factory->create_instance(
         get_string('view'),

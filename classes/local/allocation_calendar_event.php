@@ -206,6 +206,19 @@ final class allocation_calendar_event {
             self::delete_allocation_calendar_events($allocation);
         }
         $events->close();
+
+        // Clean up any remaining orphaned calendar events where the allocation no longer exists.
+        $sql = "SELECT e.* FROM {event} e WHERE component = 'enrol_programs' AND NOT EXISTS (SELECT 1 FROM {enrol_programs_allocations} a WHERE a.id = e.instance)";
+        $orphans = $DB->get_recordset_sql($sql);
+        foreach ($orphans as $event) {
+            try {
+                $calendarevent = \calendar_event::load($event);
+                $calendarevent->delete(false);
+            } catch (\Throwable $e) {
+                $DB->delete_records('event', ['id' => $event->id]);
+            }
+        }
+        $orphans->close();
     }
 
     /**
