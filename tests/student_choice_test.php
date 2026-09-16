@@ -387,5 +387,32 @@ final class student_choice_test extends \advanced_testcase {
         ]);
         $this->assertStringContainsString('3 Credits', $combined);
         $this->assertStringContainsString('50 pts', $combined);
+
+        // Test custom currency names (e.g. ECT for academic credit hours).
+        set_config('customname_credithours', 'ECT', 'enrol_trophy');
+        set_config('customname_credithours_plural', 'ECT', 'enrol_trophy');
+        $customcreditbadge = \enrol_programs\local\trophy_bridge::render_reward_badges(['credithours' => 4.0]);
+        $this->assertStringContainsString('4 ECT', $customcreditbadge);
+        $this->assertStringContainsString('title="ECT"', $customcreditbadge);
+
+        // Test custom points name.
+        set_config('customname_points', 'XP', 'enrol_trophy');
+        set_config('customname_points_plural', 'XP', 'enrol_trophy');
+        $custompointbadge = \enrol_programs\local\trophy_bridge::render_reward_badges(['points' => 200]);
+        $this->assertStringContainsString('200 XP', $custompointbadge);
+
+        // Test custom named medal prize.
+        $custommedalbadge = \enrol_programs\local\trophy_bridge::render_reward_badges([
+            'medaltype' => 'custom',
+            'medalreward' => 1,
+            'medalcustomname' => 'Master Diploma',
+        ]);
+        $this->assertStringContainsString('Master Diploma', $custommedalbadge);
+
+        // Clean up configs.
+        unset_config('customname_credithours', 'enrol_trophy');
+        unset_config('customname_credithours_plural', 'enrol_trophy');
+        unset_config('customname_points', 'enrol_trophy');
+        unset_config('customname_points_plural', 'enrol_trophy');
     }
 }

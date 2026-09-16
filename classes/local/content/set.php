@@ -196,8 +196,16 @@ class set extends item {
     public function get_sequencetype_info(): string {
         if ($this->completionrule === self::COMPLETION_RULE_CREDITS && $this->mincredits > 0) {
             $formatted = rtrim(rtrim(number_format($this->mincredits, 2), '0'), '.');
+            if (\enrol_programs\local\trophy_bridge::has_custom_name('credithours')) {
+                $unit = \enrol_programs\local\trophy_bridge::get_type_label('credithours', (float)$this->mincredits);
+                return get_string('sequencetype_credits_info_unit', 'enrol_programs', ['min' => $formatted, 'unit' => $unit]);
+            }
             return get_string('sequencetype_credits_info', 'enrol_programs', ['min' => $formatted]);
         } else if ($this->completionrule === self::COMPLETION_RULE_POINTS && $this->minpoints > 0) {
+            if (\enrol_programs\local\trophy_bridge::has_custom_name('points')) {
+                $unit = \enrol_programs\local\trophy_bridge::get_type_label('points', (float)$this->minpoints);
+                return get_string('sequencetype_points_info_unit', 'enrol_programs', ['min' => $this->minpoints, 'unit' => $unit]);
+            }
             return get_string('sequencetype_points_info', 'enrol_programs', ['min' => $this->minpoints]);
         } else if ($this->completionrule === self::COMPLETION_RULE_BOTH_COURSES_CREDITS && $this->mincredits > 0) {
             $formatted = rtrim(rtrim(number_format($this->mincredits, 2), '0'), '.');
@@ -205,13 +213,25 @@ class set extends item {
             $a->min = $this->minprerequisites;
             $a->total = count($this->children);
             $base = get_string('sequencetype_' . $this->sequencetype, 'enrol_programs', $a);
-            return $base . ' (' . get_string('sequencetype_credits_info', 'enrol_programs', ['min' => $formatted]) . ')';
+            if (\enrol_programs\local\trophy_bridge::has_custom_name('credithours')) {
+                $unit = \enrol_programs\local\trophy_bridge::get_type_label('credithours', (float)$this->mincredits);
+                $info = get_string('sequencetype_credits_info_unit', 'enrol_programs', ['min' => $formatted, 'unit' => $unit]);
+            } else {
+                $info = get_string('sequencetype_credits_info', 'enrol_programs', ['min' => $formatted]);
+            }
+            return $base . ' (' . $info . ')';
         } else if ($this->completionrule === self::COMPLETION_RULE_BOTH_COURSES_POINTS && $this->minpoints > 0) {
             $a = new \stdClass();
             $a->min = $this->minprerequisites;
             $a->total = count($this->children);
             $base = get_string('sequencetype_' . $this->sequencetype, 'enrol_programs', $a);
-            return $base . ' (' . get_string('sequencetype_points_info', 'enrol_programs', ['min' => $this->minpoints]) . ')';
+            if (\enrol_programs\local\trophy_bridge::has_custom_name('points')) {
+                $unit = \enrol_programs\local\trophy_bridge::get_type_label('points', (float)$this->minpoints);
+                $info = get_string('sequencetype_points_info_unit', 'enrol_programs', ['min' => $this->minpoints, 'unit' => $unit]);
+            } else {
+                $info = get_string('sequencetype_points_info', 'enrol_programs', ['min' => $this->minpoints]);
+            }
+            return $base . ' (' . $info . ')';
         }
 
         $a = new \stdClass();

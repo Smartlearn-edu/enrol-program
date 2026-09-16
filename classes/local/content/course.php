@@ -46,6 +46,9 @@ final class course extends item {
     /** @var int Trophy or medal reward count */
     protected $medalreward = 0;
 
+    /** @var string Custom name for medal if medaltype is custom */
+    protected $medalcustomname = '';
+
     public function get_courseid(): int {
         return $this->courseid;
     }
@@ -87,6 +90,15 @@ final class course extends item {
     }
 
     /**
+     * Get custom medal name.
+     *
+     * @return string
+     */
+    public function get_medalcustomname(): string {
+        return $this->medalcustomname;
+    }
+
+    /**
      * Return rewards as a structured object.
      *
      * @return \stdClass
@@ -97,6 +109,7 @@ final class course extends item {
         $rewards->points = $this->points;
         $rewards->medaltype = $this->medaltype ?? '';
         $rewards->medalreward = $this->medalreward;
+        $rewards->medalcustomname = $this->medalcustomname;
         return $rewards;
     }
 
@@ -164,6 +177,16 @@ final class course extends item {
     }
 
     /**
+     * Set custom medal name.
+     *
+     * @param string $name
+     * @return void
+     */
+    public function set_medalcustomname(string $name): void {
+        $this->medalcustomname = $name;
+    }
+
+    /**
      * Factory method.
      *
      * @param \stdClass $record
@@ -206,6 +229,9 @@ final class course extends item {
             $item->medaltype = $sequence->medaltype;
             $item->medalreward = (int)($sequence->medalreward ?? 1);
         }
+        if (!empty($sequence->medalcustomname)) {
+            $item->medalcustomname = (string)$sequence->medalcustomname;
+        }
 
         // Auto-detect default rewards from enrol_trophy if not explicitly overridden in item.
         if ($item->credithours == 0.0 && $item->points == 0 && empty($item->medaltype)) {
@@ -214,6 +240,7 @@ final class course extends item {
             $item->points = $trophyrewards->points;
             $item->medaltype = $trophyrewards->medaltype ?: null;
             $item->medalreward = $trophyrewards->medalreward;
+            $item->medalcustomname = $trophyrewards->medalcustomname ?? '';
         }
 
         if ($record->minprerequisites != 1) {

@@ -75,6 +75,7 @@ class trophy_bridge {
         $rewards->points = 0;
         $rewards->medaltype = '';
         $rewards->medalreward = 0;
+        $rewards->medalcustomname = '';
 
         if (!self::is_trophy_active()) {
             return $rewards;
@@ -94,6 +95,7 @@ class trophy_bridge {
                 if (!empty($rec->givemedal) && !empty($rec->medalreward)) {
                     $rewards->medaltype = $rec->medaltype ?? 'trophy';
                     $rewards->medalreward = (int)$rec->medalreward;
+                    $rewards->medalcustomname = $rec->medalcustomname ?? '';
                 }
             }
         } catch (\Throwable $e) {
@@ -131,6 +133,128 @@ class trophy_bridge {
     }
 
     /**
+     * Get currency unit label (honoring enrol_trophy admin custom singular/plural names).
+     *
+     * @param string $type Currency type ('points', 'credithours', preset medal name, or 'custom').
+     * @param float $amount Amount (to determine singular vs plural).
+     * @param string $customname Custom name if type is 'custom'.
+     * @return string Unit label.
+     */
+    public static function get_type_label(string $type, float $amount = 1.0, string $customname = ''): string {
+        if (function_exists('enrol_trophy_get_currency_label')) {
+            return enrol_trophy_get_currency_label($type, $amount, $customname);
+        }
+
+        if (self::is_trophy_active()) {
+            if ($type === 'credithours') {
+                $single = get_config('enrol_trophy', 'customname_credithours');
+                $plural = get_config('enrol_trophy', 'customname_credithours_plural');
+                if (!empty($plural) && (float)$amount != 1.0) {
+                    return $plural;
+                } else if (!empty($single)) {
+                    return $single;
+                } else if (!empty($plural)) {
+                    return $plural;
+                }
+            } else if ($type === 'points') {
+                $single = get_config('enrol_trophy', 'customname_points');
+                $plural = get_config('enrol_trophy', 'customname_points_plural');
+                if (!empty($plural) && (int)$amount !== 1) {
+                    return $plural;
+                } else if (!empty($single)) {
+                    return $single;
+                } else if (!empty($plural)) {
+                    return $plural;
+                }
+            } else if ($type === 'custom' && !empty($customname)) {
+                return $customname;
+            } else {
+                $single = get_config('enrol_trophy', 'customname_' . $type);
+                $plural = get_config('enrol_trophy', 'customname_' . $type . '_plural');
+                if (!empty($plural) && (int)$amount !== 1) {
+                    return $plural;
+                } else if (!empty($single)) {
+                    return $single;
+                } else if (!empty($plural)) {
+                    return $plural;
+                }
+            }
+        }
+
+        // Fallback to enrol_programs localized strings.
+        if ($type === 'credithours') {
+            if ((float)$amount == 1.0) {
+                return get_string_manager()->string_exists('credithour_singular', 'enrol_programs')
+                    ? get_string('credithour_singular', 'enrol_programs')
+                    : 'Credit';
+            }
+            return get_string_manager()->string_exists('credithours_plural', 'enrol_programs')
+                ? get_string('credithours_plural', 'enrol_programs')
+                : 'Credits';
+        }
+
+        if ($type === 'points') {
+            return 'pts';
+        }
+
+        if ($type === 'custom' && !empty($customname)) {
+            return $customname;
+        }
+
+        $strkey = 'medaltype_' . $type;
+        return get_string_manager()->string_exists($strkey, 'enrol_programs')
+            ? get_string($strkey, 'enrol_programs')
+            : ucfirst($type);
+    }
+
+    /**
+     * Check if a custom name is configured in enrol_trophy for a currency type.
+     *
+     * @param string $type
+     * @param string $customname
+     * @return bool
+     */
+    public static function has_custom_name(string $type, string $customname = ''): bool {
+        if ($type === 'custom' && !empty($customname)) {
+            return true;
+        }
+        if (self::is_trophy_active()) {
+            $single = get_config('enrol_trophy', 'customname_' . $type);
+            $plural = get_config('enrol_trophy', 'customname_' . $type . '_plural');
+            return !empty($single) || !empty($plural);
+        }
+        return false;
+    }
+
+    /**
+     * Get descriptive title/heading for a currency type.
+     *
+     * @param string $type
+     * @param string $customname
+     * @return string
+     */
+    public static function get_type_title(string $type, string $customname = ''): string {
+        if (self::has_custom_name($type, $customname)) {
+            return self::get_type_label($type, 2.0, $customname);
+        }
+
+        if ($type === 'credithours') {
+            return get_string('credithours', 'enrol_programs');
+        }
+        if ($type === 'points') {
+            return get_string('points', 'enrol_programs');
+        }
+        if ($type === 'custom' && !empty($customname)) {
+            return $customname;
+        }
+
+        $strkey = 'medaltype_' . $type;
+        return get_string_manager()->string_exists($strkey, 'enrol_programs')
+            ? get_string($strkey, 'enrol_programs')
+            : ucfirst($type);
+    }
+
+    /**
      * Render visual badge HTML for a course's rewards.
      *
      * @param stdClass|array|null $rewards Object containing credithours, points, medaltype, medalreward
@@ -149,26 +273,32 @@ class trophy_bridge {
         if (!empty($rewards->credithours) && $rewards->credithours > 0) {
             $formattedcredits = rtrim(rtrim(number_format($rewards->credithours, 2), '0'), '.');
             $icon = self::get_type_icon_html('credithours', $size);
-            $text = get_string('credithours_badge', 'enrol_programs', $formattedcredits);
+            $label = self::get_type_label('credithours', (float)$rewards->credithours);
+            $text = $formattedcredits . ' ' . $label;
+            $title = self::get_type_title('credithours');
             $html .= html_writer::span($icon . ' ' . $text, 'badge badge-info bg-info text-white mr-1 p-1', [
-                'title' => get_string('credithours', 'enrol_programs'),
+                'title' => $title,
             ]);
         }
 
         if (!empty($rewards->points) && $rewards->points > 0) {
             $icon = self::get_type_icon_html('points', $size);
-            $text = get_string('points_badge', 'enrol_programs', $rewards->points);
+            if (self::has_custom_name('points')) {
+                $label = self::get_type_label('points', (float)$rewards->points);
+                $text = $rewards->points . ' ' . $label;
+            } else {
+                $text = get_string('points_badge', 'enrol_programs', $rewards->points);
+            }
+            $title = self::get_type_title('points');
             $html .= html_writer::span($icon . ' ' . $text, 'badge badge-warning bg-warning text-dark mr-1 p-1', [
-                'title' => get_string('points', 'enrol_programs'),
+                'title' => $title,
             ]);
         }
 
         if (!empty($rewards->medalreward) && !empty($rewards->medaltype)) {
             $icon = self::get_type_icon_html($rewards->medaltype, $size);
-            $medalstringkey = 'medaltype_' . $rewards->medaltype;
-            $medalname = get_string_manager()->string_exists($medalstringkey, 'enrol_programs')
-                ? get_string($medalstringkey, 'enrol_programs')
-                : ucfirst($rewards->medaltype);
+            $customname = $rewards->medalcustomname ?? '';
+            $medalname = self::get_type_label($rewards->medaltype, (float)$rewards->medalreward, $customname);
             $text = ($rewards->medalreward > 1) ? "{$rewards->medalreward}x {$medalname}" : $medalname;
             $html .= html_writer::span($icon . ' ' . $text, 'badge badge-success bg-success text-white mr-1 p-1', [
                 'title' => $medalname,

@@ -137,9 +137,19 @@ EOT;
 
                 if ($rule === set::COMPLETION_RULE_CREDITS && $mincredits > 0) {
                     $formattedcredits = rtrim(rtrim(number_format($mincredits, 2), '0'), '.');
-                    $instruction = get_string('selectcredits', 'enrol_programs', $formattedcredits);
+                    if (\enrol_programs\local\trophy_bridge::has_custom_name('credithours')) {
+                        $creditlabel = \enrol_programs\local\trophy_bridge::get_type_label('credithours', (float)$mincredits);
+                        $instruction = get_string('selectcredits_unit', 'enrol_programs', (object)['amount' => $formattedcredits, 'unit' => $creditlabel]);
+                    } else {
+                        $instruction = get_string('selectcredits', 'enrol_programs', $formattedcredits);
+                    }
                 } else if ($rule === set::COMPLETION_RULE_POINTS && $minpoints > 0) {
-                    $instruction = get_string('selectpoints', 'enrol_programs', $minpoints);
+                    if (\enrol_programs\local\trophy_bridge::has_custom_name('points')) {
+                        $pointslabel = \enrol_programs\local\trophy_bridge::get_type_label('points', (float)$minpoints);
+                        $instruction = get_string('selectpoints_unit', 'enrol_programs', (object)['amount' => $minpoints, 'unit' => $pointslabel]);
+                    } else {
+                        $instruction = get_string('selectpoints', 'enrol_programs', $minpoints);
+                    }
                 } else {
                     $instruction = get_string('selectncourses', 'enrol_programs', $minreq);
                 }
@@ -176,10 +186,14 @@ EOT;
                 $selectionformhtml .= '<span class="mr-3 font-weight-bold">Selected: <span class="sel-count-val">0</span> Courses</span>';
                 if ($mincredits > 0 || $rule === set::COMPLETION_RULE_CREDITS) {
                     $reqcr = rtrim(rtrim(number_format($mincredits, 2), '0'), '.');
-                    $selectionformhtml .= '<span class="mr-3 text-primary font-weight-bold">🎓 <span class="sel-credits-val">0.0</span> / ' . $reqcr . ' Credits</span>';
+                    $creditlabel = \enrol_programs\local\trophy_bridge::get_type_label('credithours', (float)$mincredits);
+                    $icon = \enrol_programs\local\trophy_bridge::get_type_icon_html('credithours', '14px');
+                    $selectionformhtml .= '<span class="mr-3 text-primary font-weight-bold">' . $icon . ' <span class="sel-credits-val">0.0</span> / ' . $reqcr . ' ' . $creditlabel . '</span>';
                 }
                 if ($minpoints > 0 || $rule === set::COMPLETION_RULE_POINTS) {
-                    $selectionformhtml .= '<span class="mr-3 text-warning font-weight-bold">🪙 <span class="sel-points-val">0</span> / ' . $minpoints . ' pts</span>';
+                    $pointslabel = \enrol_programs\local\trophy_bridge::get_type_label('points', (float)$minpoints);
+                    $icon = \enrol_programs\local\trophy_bridge::get_type_icon_html('points', '14px');
+                    $selectionformhtml .= '<span class="mr-3 text-warning font-weight-bold">' . $icon . ' <span class="sel-points-val">0</span> / ' . $minpoints . ' ' . $pointslabel . '</span>';
                 }
                 $selectionformhtml .= '</div>';
                 $selectionformhtml .= '</div>';

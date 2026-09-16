@@ -88,12 +88,21 @@ EOT;
             . (isset($program->timeallocationend) ? userdate($program->timeallocationend) : $strnotset) . '</dd>';
         if ($totalcredits > 0) {
             $formattedcredits = rtrim(rtrim(number_format($totalcredits, 2), '0'), '.');
-            $result .= '<dt class="col-3">' . get_string('credithours', 'enrol_programs') . ':</dt><dd class="col-9">'
-                . \html_writer::span(get_string('credithours_badge', 'enrol_programs', $formattedcredits), 'badge badge-info bg-info text-white') . '</dd>';
+            $credittitle = \enrol_programs\local\trophy_bridge::get_type_title('credithours');
+            $creditlabel = \enrol_programs\local\trophy_bridge::get_type_label('credithours', (float)$totalcredits);
+            $result .= '<dt class="col-3">' . $credittitle . ':</dt><dd class="col-9">'
+                . \html_writer::span($formattedcredits . ' ' . $creditlabel, 'badge badge-info bg-info text-white') . '</dd>';
         }
         if ($totalpoints > 0) {
-            $result .= '<dt class="col-3">' . get_string('points', 'enrol_programs') . ':</dt><dd class="col-9">'
-                . \html_writer::span(get_string('points_badge', 'enrol_programs', $totalpoints), 'badge badge-warning bg-warning text-dark') . '</dd>';
+            $pointstitle = \enrol_programs\local\trophy_bridge::get_type_title('points');
+            if (\enrol_programs\local\trophy_bridge::has_custom_name('points')) {
+                $pointslabel = \enrol_programs\local\trophy_bridge::get_type_label('points', (float)$totalpoints);
+                $pointstext = $totalpoints . ' ' . $pointslabel;
+            } else {
+                $pointstext = get_string('points_badge', 'enrol_programs', $totalpoints);
+            }
+            $result .= '<dt class="col-3">' . $pointstitle . ':</dt><dd class="col-9">'
+                . \html_writer::span($pointstext, 'badge badge-warning bg-warning text-dark') . '</dd>';
         }
         $result .= '</dl>';
 

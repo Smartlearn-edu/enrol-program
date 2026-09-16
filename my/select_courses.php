@@ -127,7 +127,12 @@ if ($rule === set::COMPLETION_RULE_CREDITS) {
             'selected' => rtrim(rtrim(number_format($selectedcredits, 2), '0'), '.'),
             'required' => rtrim(rtrim(number_format($mincredits, 2), '0'), '.'),
         ];
-        \core\notification::error(get_string('errorinsufficientcredits', 'enrol_programs', $a));
+        if (\enrol_programs\local\trophy_bridge::has_custom_name('credithours')) {
+            $a->unit = \enrol_programs\local\trophy_bridge::get_type_label('credithours', (float)$mincredits);
+            \core\notification::error(get_string('errorinsufficientcredits_unit', 'enrol_programs', $a));
+        } else {
+            \core\notification::error(get_string('errorinsufficientcredits', 'enrol_programs', $a));
+        }
         redirect($returnurl);
     }
 } else if ($rule === set::COMPLETION_RULE_POINTS) {
@@ -136,7 +141,12 @@ if ($rule === set::COMPLETION_RULE_CREDITS) {
             'selected' => $selectedpoints,
             'required' => $minpoints,
         ];
-        \core\notification::error(get_string('errorinsufficientpoints', 'enrol_programs', $a));
+        if (\enrol_programs\local\trophy_bridge::has_custom_name('points')) {
+            $a->unit = \enrol_programs\local\trophy_bridge::get_type_label('points', (float)$minpoints);
+            \core\notification::error(get_string('errorinsufficientpoints_unit', 'enrol_programs', $a));
+        } else {
+            \core\notification::error(get_string('errorinsufficientpoints', 'enrol_programs', $a));
+        }
         redirect($returnurl);
     }
 } else if ($rule === set::COMPLETION_RULE_BOTH_COURSES_CREDITS) {
@@ -149,7 +159,12 @@ if ($rule === set::COMPLETION_RULE_CREDITS) {
             'selected' => rtrim(rtrim(number_format($selectedcredits, 2), '0'), '.'),
             'required' => rtrim(rtrim(number_format($mincredits, 2), '0'), '.'),
         ];
-        \core\notification::error(get_string('errorinsufficientcredits', 'enrol_programs', $a));
+        if (\enrol_programs\local\trophy_bridge::has_custom_name('credithours')) {
+            $a->unit = \enrol_programs\local\trophy_bridge::get_type_label('credithours', (float)$mincredits);
+            \core\notification::error(get_string('errorinsufficientcredits_unit', 'enrol_programs', $a));
+        } else {
+            \core\notification::error(get_string('errorinsufficientcredits', 'enrol_programs', $a));
+        }
         redirect($returnurl);
     }
 } else if ($rule === set::COMPLETION_RULE_BOTH_COURSES_POINTS) {
@@ -162,7 +177,12 @@ if ($rule === set::COMPLETION_RULE_CREDITS) {
             'selected' => $selectedpoints,
             'required' => $minpoints,
         ];
-        \core\notification::error(get_string('errorinsufficientpoints', 'enrol_programs', $a));
+        if (\enrol_programs\local\trophy_bridge::has_custom_name('points')) {
+            $a->unit = \enrol_programs\local\trophy_bridge::get_type_label('points', (float)$minpoints);
+            \core\notification::error(get_string('errorinsufficientpoints_unit', 'enrol_programs', $a));
+        } else {
+            \core\notification::error(get_string('errorinsufficientpoints', 'enrol_programs', $a));
+        }
         redirect($returnurl);
     }
 } else {

@@ -1396,6 +1396,10 @@ final class allocation {
                 $a = new stdClass();
                 $a->selected = rtrim(rtrim(number_format($totalcredits, 2), '0'), '.');
                 $a->required = rtrim(rtrim(number_format($mincredits, 2), '0'), '.');
+                if (trophy_bridge::has_custom_name('credithours')) {
+                    $a->unit = trophy_bridge::get_type_label('credithours', (float)$mincredits);
+                    throw new \moodle_exception('errorinsufficientcredits_unit', 'enrol_programs', '', $a);
+                }
                 throw new \moodle_exception('errorinsufficientcredits', 'enrol_programs', '', $a);
             }
         } else if ($rule === set::COMPLETION_RULE_POINTS && $minpoints > 0) {
@@ -1417,6 +1421,10 @@ final class allocation {
                 $a = new stdClass();
                 $a->selected = $totalpoints;
                 $a->required = $minpoints;
+                if (trophy_bridge::has_custom_name('points')) {
+                    $a->unit = trophy_bridge::get_type_label('points', (float)$minpoints);
+                    throw new \moodle_exception('errorinsufficientpoints_unit', 'enrol_programs', '', $a);
+                }
                 throw new \moodle_exception('errorinsufficientpoints', 'enrol_programs', '', $a);
             }
         } else if ($rule === set::COMPLETION_RULE_BOTH_COURSES_CREDITS) {
@@ -1441,6 +1449,10 @@ final class allocation {
                 $a = new stdClass();
                 $a->selected = rtrim(rtrim(number_format($totalcredits, 2), '0'), '.');
                 $a->required = rtrim(rtrim(number_format($mincredits, 2), '0'), '.');
+                if (trophy_bridge::has_custom_name('credithours')) {
+                    $a->unit = trophy_bridge::get_type_label('credithours', (float)$mincredits);
+                    throw new \moodle_exception('errorinsufficientcredits_unit', 'enrol_programs', '', $a);
+                }
                 throw new \moodle_exception('errorinsufficientcredits', 'enrol_programs', '', $a);
             }
         } else if ($rule === set::COMPLETION_RULE_BOTH_COURSES_POINTS) {
@@ -1465,6 +1477,10 @@ final class allocation {
                 $a = new stdClass();
                 $a->selected = $totalpoints;
                 $a->required = $minpoints;
+                if (trophy_bridge::has_custom_name('points')) {
+                    $a->unit = trophy_bridge::get_type_label('points', (float)$minpoints);
+                    throw new \moodle_exception('errorinsufficientpoints_unit', 'enrol_programs', '', $a);
+                }
                 throw new \moodle_exception('errorinsufficientpoints', 'enrol_programs', '', $a);
             }
         } else {
