@@ -1,0 +1,162 @@
+{{!
+    @template enrol_programs/program_card
+
+    Program card template for catalogue display.
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * none
+
+    Context variables required for this template:
+    * items - Array of program card data objects
+
+    Example context (json):
+    {
+        "items": [
+            {
+                "id": 1,
+                "name": "Full Stack Web Development",
+                "url": "http://example.com/enrol/programs/catalogue/program.php?id=1",
+                "imageurl": "http://example.com/pluginfile.php/1/enrol_programs/image/1/cover.jpg",
+                "hasimage": true,
+                "description": "Comprehensive program for web development.",
+                "popupcontent": "Comprehensive program for web development.",
+                "isallocated": false,
+                "allocationcompleted": false,
+                "statusbadge": "",
+                "hasitems": true,
+                "courses_str": "5 courses included",
+                "hascredits": true,
+                "credits_str": "12.0 Credits",
+                "haspoints": true,
+                "points_str": "150 Points",
+                "hascustomfields": false,
+                "customfields": [],
+                "hastags": false,
+                "tags": [],
+                "buttontext": "View Program",
+                "buttonclass": "btn-outline-primary"
+            }
+        ]
+    }
+}}
+{{#items}}
+<div class="col-12 mb-4">
+    <div class="sc-course-card-wrapper sc-program-wrapper position-relative h-100">
+        <div class="card h-100 sc-program-card border-0 rounded-3 overflow-hidden position-relative d-flex">
+            <a href="{{url}}" class="text-decoration-none text-dark d-block sc-program-img-container sc-card-img-container">
+                {{#hasimage}}
+                <img src="{{imageurl}}" alt="{{name}}" class="sc-card-img h-100 object-fit-cover w-100">
+                {{/hasimage}}
+                {{^hasimage}}
+                <div class="sc-card-placeholder d-flex align-items-center justify-content-center h-100">
+                    <i class="fa fa-sitemap fa-3x text-muted"></i>
+                </div>
+                {{/hasimage}}
+            </a>
+            
+            <div class="p-4 d-flex flex-column flex-grow-1">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <a href="{{url}}" class="text-decoration-none text-dark">
+                        <h4 class="card-title fw-bold mb-1 ep-program-title">{{name}}</h4>
+                    </a>
+                    {{#statusbadge}}
+                        <div class="ms-2">{{{statusbadge}}}</div>
+                    {{/statusbadge}}
+                </div>
+                
+                <div class="d-flex align-items-center flex-wrap gap-3 text-muted mb-2 ep-card-meta" style="font-size: 0.9rem;">
+                    {{#hasitems}}
+                    <span class="me-3"><i class="fa fa-book me-1"></i> {{courses_str}}</span>
+                    {{/hasitems}}
+                    {{#hascredits}}
+                    <span class="me-3"><i class="fa fa-graduation-cap me-1"></i> {{credits_str}}</span>
+                    {{/hascredits}}
+                    {{#haspoints}}
+                    <span class="me-3"><i class="fa fa-star text-warning me-1"></i> {{points_str}}</span>
+                    {{/haspoints}}
+                    {{#allocationcompleted}}
+                    <span class="text-success"><i class="fa fa-trophy me-1"></i> {{#str}} programstatus_completed, enrol_programs {{/str}}</span>
+                    {{/allocationcompleted}}
+                </div>
+
+                {{#hascustomfields}}
+                <div class="d-flex align-items-center flex-wrap gap-2 mb-3 ep-cf-badges">
+                    {{#customfields}}
+                    <span class="badge ep-cf-badge px-2 py-1">
+                        <span class="ep-cf-name">{{name}}:</span> <span class="ep-cf-val">{{value}}</span>
+                    </span>
+                    {{/customfields}}
+                </div>
+                {{/hascustomfields}}
+                
+                <div class="card-text text-muted mb-4 sc-desc-container flex-grow-1" style="height: auto; max-height: 80px;">
+                    {{{description}}}
+                </div>
+                
+                <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        {{#hastags}}
+                        <div class="ep-card-tags d-flex flex-wrap gap-1">
+                            {{#tags}}
+                            <span class="badge bg-secondary text-white">{{name}}</span>
+                            {{/tags}}
+                        </div>
+                        {{/hastags}}
+                    </div>
+                    <a href="{{url}}" class="btn {{buttonclass}} rounded-pill sc-view-btn px-4">{{buttontext}}</a>
+                </div>
+            </div>
+        </div>
+
+        {{! ── Hover popup with quick details ── }}
+        <div class="sc-hover-popup rounded-3" style="width: 380px;">
+            <div class="sc-popup-header">
+                <h6 class="sc-popup-title fw-bold mb-1">{{name}}</h6>
+                <span class="sc-popup-badge badge">{{#str}} program, enrol_programs {{/str}}</span>
+            </div>
+
+            <div class="sc-popup-meta">
+                {{#hasitems}}
+                <div class="sc-popup-meta-item">
+                    <i class="fa fa-book"></i>
+                    <span>{{courses_str}}</span>
+                </div>
+                {{/hasitems}}
+                {{#hascredits}}
+                <div class="sc-popup-meta-item">
+                    <i class="fa fa-graduation-cap"></i>
+                    <span>{{credits_str}}</span>
+                </div>
+                {{/hascredits}}
+                {{#haspoints}}
+                <div class="sc-popup-meta-item">
+                    <i class="fa fa-star text-warning"></i>
+                    <span>{{points_str}}</span>
+                </div>
+                {{/haspoints}}
+                {{#hascustomfields}}
+                    {{#customfields}}
+                    <div class="sc-popup-meta-item">
+                        <i class="fa fa-tag"></i>
+                        <span><strong>{{name}}:</strong> {{value}}</span>
+                    </div>
+                    {{/customfields}}
+                {{/hascustomfields}}
+            </div>
+
+            <div class="sc-popup-desc" style="max-height: 180px;">
+                <p class="text-muted mb-0 sc-popup-desc-text">{{popupcontent}}</p>
+            </div>
+
+            <div class="sc-popup-action text-center mt-3">
+                <a href="{{url}}" class="btn btn-primary w-100 rounded-pill sc-popup-btn">
+                    <i class="fa fa-eye me-1"></i> {{buttontext}}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{{/items}}

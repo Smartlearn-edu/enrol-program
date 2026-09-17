@@ -1,0 +1,124 @@
+{{!
+    @template enrol_programs/catalogue
+
+    Main program catalogue template with filters, tag pills, search, and program cards.
+
+    Classes required for JS:
+    * ep-tag-btn
+    * ep-cf-checkbox
+    * ep-search-input
+
+    Data attributes required for JS:
+    * data-tag
+    * data-field
+
+    Context variables required for this template:
+    * searchtext - Active search text
+    * activetag - Active tag filter
+    * allcount - Total count of active programs
+    * isallactive - Whether All Programs is selected
+    * tags - Array of tag items with name, rawname, count, isactive
+    * customfield_filters - Array of custom field filters
+    * has_cffilters - Whether there are custom field filters
+    * totalcount - Total matching programs count
+    * showing_str - Localized showing count text
+    * cardshtml - Pre-rendered cards HTML
+    * paginationhtml - Pre-rendered pagination HTML
+    * hasprograms - Whether there are programs matching
+    * is_filtering - Whether any filter is active
+
+    Example context (json):
+    {
+        "searchtext": "",
+        "activetag": "",
+        "allcount": 12,
+        "isallactive": true,
+        "tags": [],
+        "customfield_filters": [],
+        "has_cffilters": false,
+        "totalcount": 12,
+        "showing_str": "Showing 12 programs",
+        "cardshtml": "<div>...</div>",
+        "paginationhtml": "",
+        "hasprograms": true,
+        "is_filtering": false
+    }
+}}
+<div class="local-smartcatalog-container ep-catalogue-container" id="ep-catalogue-app">
+    {{! ── Top Filter Bar (Search & Tags) ── }}
+    <div class="sc-filters card p-3 mb-4 border-0 shadow-sm rounded-3">
+        <div class="d-flex align-items-start flex-wrap gap-3 mb-3 sc-top-filter-bar">
+            <div class="sc-filter-item sc-filter-item-search mb-2" style="flex: 0 1 400px; min-width: 250px;">
+                <label class="sc-filter-label fw-bold mb-1 d-block" for="ep-search-input">
+                    {{#str}} search, moodle {{/str}}
+                </label>
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text border-end-0"><i class="fa fa-search text-muted"></i></span>
+                    </div>
+                    <input type="text" id="ep-search-input" class="form-control border-start-0 ps-0" placeholder="{{#str}} searchprograms_placeholder, enrol_programs {{/str}}" value="{{searchtext}}">
+                </div>
+            </div>
+        </div>
+
+        {{! ── Tag Navigation Pills ── }}
+        <div class="sc-category-navigation border-top pt-3" id="ep-tag-navigation">
+            <div class="sc-category-level sc-category-level-0">
+                <div class="sc-cat-buttons-container d-flex align-items-center flex-wrap gap-2">
+                    <button type="button" class="btn sc-cat-btn ep-tag-btn {{#isallactive}}active{{/isallactive}}" data-tag="">
+                        <span class="sc-cat-btn-name">{{#str}} allprograms_badge, enrol_programs {{/str}}</span>
+                        <span class="sc-cat-badge">{{allcount}}</span>
+                    </button>
+                    {{#tags}}
+                    <button type="button" class="btn sc-cat-btn ep-tag-btn {{#isactive}}active{{/isactive}}" data-tag="{{rawname}}">
+                        <span class="sc-cat-btn-name">{{name}}</span>
+                        <span class="sc-cat-badge">{{count}}</span>
+                    </button>
+                    {{/tags}}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{! ── Results Info & Clear Filters Bar ── }}
+    <div class="d-flex justify-content-between align-items-center mb-3 px-1">
+        <div id="ep-showing-count" class="text-muted fw-semibold" style="font-size: 0.95rem;">
+            {{showing_str}}
+        </div>
+        <button type="button" id="ep-clear-filters" class="btn btn-sm btn-link text-danger text-decoration-none {{^is_filtering}}d-none{{/is_filtering}}">
+            <i class="fa fa-times-circle me-1"></i> {{#str}} clearallfilters, enrol_programs {{/str}}
+        </button>
+    </div>
+
+    {{! ── Main Content Grid: Sidebar + Cards ── }}
+    <div class="row mt-2">
+        {{#has_cffilters}}
+        <div class="col-lg-3 col-md-4 mb-4 sc-filter-sidebar-col" id="ep-filter-sidebar-col">
+            {{> enrol_programs/filter_sidebar }}
+        </div>
+        {{/has_cffilters}}
+
+        <div class="sc-results-col {{#has_cffilters}}col-lg-9 col-md-8{{/has_cffilters}}{{^has_cffilters}}col-12{{/has_cffilters}}" id="ep-results-col">
+            <div id="ep-cards-container" class="row">
+                {{{cardshtml}}}
+            </div>
+
+            <div id="ep-no-results" class="col-12 text-center py-5 {{#hasprograms}}d-none{{/hasprograms}}">
+                <div class="text-muted">
+                    <i class="fa fa-search fa-3x mb-3 text-secondary"></i>
+                    <h5>{{#str}} noprogramsmatching, enrol_programs {{/str}}</h5>
+                </div>
+            </div>
+
+            <div id="ep-pagination-container" class="mt-4 d-flex justify-content-center">
+                {{{paginationhtml}}}
+            </div>
+        </div>
+    </div>
+</div>
+
+{{#js}}
+require(['enrol_programs/catalogue'], function(Catalogue) {
+    Catalogue.init();
+});
+{{/js}}

@@ -60,6 +60,7 @@ $PAGE->set_button($buttons . $PAGE->button);
 $PAGE->set_heading(get_string('catalogue', 'enrol_programs'));
 $PAGE->set_title(get_string('catalogue', 'enrol_programs'));
 $PAGE->set_pagelayout('report');
+$PAGE->add_body_class('enrol-programs-catalogue-fullwidth');
 
 echo $OUTPUT->header();
 

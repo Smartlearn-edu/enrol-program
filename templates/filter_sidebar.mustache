@@ -1,0 +1,53 @@
+{{!
+    @template enrol_programs/filter_sidebar
+
+    Sidebar filters for program catalogue.
+
+    Classes required for JS:
+    * ep-cf-checkbox
+
+    Data attributes required for JS:
+    * data-field
+
+    Context variables required for this template:
+    * customfield_filters - Array of custom field filter objects
+
+    Example context (json):
+    {
+        "customfield_filters": [
+            {
+                "shortname": "level",
+                "name": "Skill Level",
+                "options": [
+                    {"value": "1", "label": "Beginner", "selected": false},
+                    {"value": "2", "label": "Intermediate", "selected": true}
+                ]
+            }
+        ]
+    }
+}}
+<div class="sc-custom-filters sticky-top" style="top: 20px; z-index: 10;">
+    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom sc-filter-header">
+        <h5 class="m-0 sc-filter-sidebar-title">
+            <i class="fa fa-sliders me-2"></i> {{#str}} filters, enrol_programs {{/str}}
+        </h5>
+        <button class="sc-filter-close-btn d-lg-none" id="ep-close-filters-btn" title="Toggle Filters" type="button">
+            <i class="fa fa-times"></i>
+        </button>
+    </div>
+    {{#customfield_filters}}
+    <div class="mb-4 ep-filter-group" data-field="{{shortname}}">
+        <div class="sc-filter-block-title fw-bold mb-2">
+            {{name}}
+        </div>
+        <div class="sc-custom-field-options px-1">
+            {{#options}}
+            <div class="form-check mb-2">
+                <input type="checkbox" class="form-check-input ep-cf-checkbox" id="cf_{{shortname}}_{{value}}" value="{{value}}" data-field="{{shortname}}" {{#selected}}checked{{/selected}}>
+                <label class="form-check-label pointer" for="cf_{{shortname}}_{{value}}" style="padding-top:2px;">{{label}}</label>
+            </div>
+            {{/options}}
+        </div>
+    </div>
+    {{/customfield_filters}}
+</div>

@@ -43,3 +43,512 @@
     height: 2rem;
     border: 2px dashed #343a40;
 }
+
+/* ==========================================================================
+   Modern Program Catalogue Styles
+   Full SmartLearn Theme & Bootstrap 5 Compatibility (Light & Dark Modes)
+   ========================================================================== */
+
+/* ── Design Tokens & Variable Mappings ── */
+:root {
+    --ep-bg: var(--smartlearn-bg, transparent);
+    --ep-card-bg: var(--smartlearn-card-bg, #ffffff);
+    --ep-card-border: var(--smartlearn-card-border, #e2e8f0);
+    --ep-text: var(--smartlearn-text, #0f172a);
+    --ep-text-muted: var(--smartlearn-text-muted, #64748b);
+    --ep-primary: var(--smartlearn-primary, #10b981);
+    --ep-primary-hover: var(--smartlearn-primary-hover, #059669);
+    --ep-primary-rgb: var(--smartlearn-primary-rgb, 16, 185, 129);
+    --ep-btn-bg: var(--smartlearn-btn-bg, var(--smartlearn-primary, #10b981));
+    --ep-btn-hover-bg: var(--smartlearn-btn-hover-bg, var(--smartlearn-primary-hover, #059669));
+    --ep-btn-text: var(--smartlearn-btn-text, #ffffff);
+    --ep-input-bg: var(--smartlearn-input-bg, var(--smartlearn-card-bg, #ffffff));
+    --ep-input-border: var(--smartlearn-input-border, var(--smartlearn-card-border, #ced4da));
+    --ep-radius: var(--smartlearn-radius, 12px);
+    --ep-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    --ep-shadow-hover: 0 14px 28px rgba(0, 0, 0, 0.1);
+}
+
+/* Explicit Dark Mode Variables */
+html[data-smartlearn-mode="dark"],
+html[data-bs-theme="dark"],
+[data-bs-theme="dark"],
+body.smartlearn-dark {
+    --ep-bg: var(--smartlearn-bg, #06140e);
+    --ep-card-bg: var(--smartlearn-card-bg, #0b291d);
+    --ep-card-border: var(--smartlearn-card-border, rgba(255, 255, 255, 0.12));
+    --ep-text: var(--smartlearn-text, #ecfdf5);
+    --ep-text-muted: var(--smartlearn-text-muted, #94a3b8);
+    --ep-primary: var(--smartlearn-primary, #10b981);
+    --ep-primary-hover: var(--smartlearn-primary-hover, #059669);
+    --ep-primary-rgb: var(--smartlearn-primary-rgb, 16, 185, 129);
+    --ep-btn-bg: var(--smartlearn-btn-bg, var(--smartlearn-primary, #10b981));
+    --ep-btn-hover-bg: var(--smartlearn-btn-hover-bg, var(--smartlearn-primary-hover, #059669));
+    --ep-btn-text: var(--smartlearn-btn-text, #ffffff);
+    --ep-input-bg: var(--smartlearn-input-bg, rgba(15, 23, 42, 0.6));
+    --ep-input-border: var(--smartlearn-input-border, rgba(255, 255, 255, 0.2));
+    --ep-radius: var(--smartlearn-radius, 12px);
+    --ep-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
+    --ep-shadow-hover: 0 16px 36px rgba(0, 0, 0, 0.55);
+}
+
+/* ── Full Width Overrides for Catalogue Report Layout ── */
+body.enrol-programs-catalogue-fullwidth #page.drawers {
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+body.enrol-programs-catalogue-fullwidth #page.drawers .main-inner,
+body.enrol-programs-catalogue-fullwidth .main-inner {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 1rem !important;
+}
+
+body.enrol-programs-catalogue-fullwidth #region-main-box,
+body.enrol-programs-catalogue-fullwidth #region-main,
+body.enrol-programs-catalogue-fullwidth [role="main"],
+body.enrol-programs-catalogue-fullwidth #page-content {
+    max-width: 100% !important;
+    width: 100% !important;
+    flex: 0 0 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* ── Main Catalogue Container ── */
+.ep-catalogue-container {
+    padding: 10px 0 30px;
+    background-color: transparent !important;
+    color: var(--ep-text);
+}
+
+/* ── Top Filters Card ── */
+.ep-catalogue-container .sc-filters {
+    background-color: var(--ep-card-bg) !important;
+    border: 1px solid var(--ep-card-border) !important;
+    border-radius: var(--ep-radius) !important;
+    color: var(--ep-text) !important;
+    box-shadow: var(--ep-shadow) !important;
+}
+
+.ep-catalogue-container .sc-filter-label {
+    color: var(--ep-text) !important;
+    font-weight: 600;
+}
+
+.ep-catalogue-container .form-control {
+    background-color: var(--ep-input-bg) !important;
+    border: 1px solid var(--ep-input-border) !important;
+    color: var(--ep-text) !important;
+    border-radius: 8px;
+    height: 42px;
+    font-size: 0.95rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ep-catalogue-container .form-control:focus {
+    border-color: var(--ep-primary) !important;
+    box-shadow: 0 0 0 0.2rem rgba(var(--ep-primary-rgb), 0.25) !important;
+    outline: 0;
+}
+
+.ep-catalogue-container .input-group-text {
+    background-color: var(--ep-input-bg) !important;
+    border-color: var(--ep-input-border) !important;
+    color: var(--ep-text-muted) !important;
+}
+
+/* ── Tag Navigation Pills ── */
+.ep-tag-btn {
+    border-radius: 24px !important;
+    padding: 8px 18px !important;
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+    border: 1px solid var(--ep-card-border) !important;
+    background-color: var(--ep-card-bg) !important;
+    color: var(--ep-text) !important;
+    box-shadow: var(--ep-shadow);
+}
+
+.ep-tag-btn:hover {
+    border-color: var(--ep-primary) !important;
+    color: var(--ep-primary) !important;
+    transform: translateY(-2px);
+    box-shadow: var(--ep-shadow-hover);
+}
+
+.ep-tag-btn.active {
+    background: var(--ep-btn-bg) !important;
+    border-color: var(--ep-btn-bg) !important;
+    color: var(--ep-btn-text) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+}
+
+.ep-tag-btn.active:hover {
+    background: var(--ep-btn-hover-bg) !important;
+    border-color: var(--ep-btn-hover-bg) !important;
+    color: var(--ep-btn-text) !important;
+}
+
+.ep-tag-btn .sc-cat-badge {
+    display: inline-block;
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 0.78rem;
+    margin-left: 6px;
+    transition: background 0.2s ease;
+}
+
+.ep-tag-btn.active .sc-cat-badge {
+    background: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+}
+
+/* ── Custom Field Sidebar Filters ── */
+.sc-custom-filters {
+    background-color: var(--ep-card-bg) !important;
+    border: 1px solid var(--ep-card-border) !important;
+    border-radius: var(--ep-radius) !important;
+    padding: 20px;
+    color: var(--ep-text) !important;
+    box-shadow: var(--ep-shadow) !important;
+}
+
+.sc-filter-header {
+    border-bottom: 1px solid var(--ep-card-border) !important;
+}
+
+.sc-filter-sidebar-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--ep-text) !important;
+}
+
+.sc-filter-block-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--ep-text) !important;
+    margin-bottom: 8px;
+}
+
+.sc-custom-field-options .form-check-label {
+    color: var(--ep-text-muted) !important;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.sc-custom-field-options .form-check-label:hover {
+    color: var(--ep-text) !important;
+}
+
+.sc-custom-field-options .form-check-input:checked {
+    background-color: var(--ep-primary) !important;
+    border-color: var(--ep-primary) !important;
+}
+
+.sc-filter-close-btn {
+    background: transparent;
+    border: none;
+    color: var(--ep-text-muted);
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+
+/* ── Program Horizontal Cards ── */
+.sc-course-card-wrapper {
+    position: relative;
+}
+
+.sc-program-card {
+    flex-direction: row !important;
+    background-color: var(--ep-card-bg) !important;
+    border: 1px solid var(--ep-card-border) !important;
+    border-radius: var(--ep-radius) !important;
+    box-shadow: var(--ep-shadow);
+    transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.25s ease;
+}
+
+.sc-course-card-wrapper:hover .sc-program-card {
+    transform: translateY(-2px);
+    border-color: var(--ep-primary) !important;
+    box-shadow: var(--ep-shadow-hover);
+}
+
+.sc-program-img-container {
+    width: 280px;
+    min-height: 200px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.sc-program-img-container .sc-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.35s ease;
+}
+
+.sc-course-card-wrapper:hover .sc-program-img-container .sc-card-img {
+    transform: scale(1.04);
+}
+
+.ep-card-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.18) 100%);
+}
+
+.ep-program-title {
+    color: var(--ep-text) !important;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.35;
+    transition: color 0.2s ease;
+}
+
+.ep-program-title:hover {
+    color: var(--ep-primary) !important;
+}
+
+.ep-card-meta {
+    font-size: 0.9rem;
+    color: var(--ep-text-muted) !important;
+}
+
+.ep-cf-badges .ep-cf-badge {
+    background-color: rgba(0, 0, 0, 0.04);
+    border: 1px solid var(--ep-card-border);
+    color: var(--ep-text);
+    font-size: 0.82rem;
+    font-weight: 500;
+    border-radius: 6px;
+    padding: 3px 8px;
+}
+
+[data-bs-theme="dark"] .ep-cf-badges .ep-cf-badge,
+html[data-smartlearn-mode="dark"] .ep-cf-badges .ep-cf-badge {
+    background-color: rgba(255, 255, 255, 0.07);
+}
+
+.ep-cf-badges .ep-cf-badge .ep-cf-name {
+    color: var(--ep-text-muted);
+    margin-right: 3px;
+}
+
+.sc-desc-container {
+    color: var(--ep-text-muted) !important;
+    line-height: 1.55;
+    font-size: 0.92rem;
+    overflow-y: auto;
+}
+
+.sc-desc-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sc-desc-container::-webkit-scrollbar-thumb {
+    background: var(--ep-card-border);
+    border-radius: 4px;
+}
+
+.sc-desc-container::-webkit-scrollbar-thumb:hover {
+    background: var(--ep-primary);
+}
+
+.sc-view-btn {
+    border-color: var(--ep-primary) !important;
+    color: var(--ep-primary) !important;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.sc-view-btn:hover {
+    background: var(--ep-primary) !important;
+    color: var(--ep-btn-text) !important;
+    transform: translateY(-1px);
+}
+
+.sc-view-btn.btn-primary {
+    background: var(--ep-primary) !important;
+    border-color: var(--ep-primary) !important;
+    color: var(--ep-btn-text) !important;
+}
+
+/* ── Course / Program Card Hover Popup ── */
+.sc-hover-popup {
+    position: absolute;
+    top: 0;
+    left: calc(100% + 15px);
+    width: 380px;
+    background: var(--ep-card-bg) !important;
+    border: 1px solid var(--ep-card-border) !important;
+    border-radius: var(--ep-radius) !important;
+    color: var(--ep-text) !important;
+    padding: 20px;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(10px);
+    transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+    pointer-events: none;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+}
+
+.sc-hover-popup::before {
+    content: '';
+    position: absolute;
+    top: 30px;
+    left: -8px;
+    width: 14px;
+    height: 14px;
+    background: var(--ep-card-bg) !important;
+    border-left: 1px solid var(--ep-card-border) !important;
+    border-bottom: 1px solid var(--ep-card-border) !important;
+    transform: rotate(45deg);
+}
+
+.sc-course-card-wrapper:hover .sc-hover-popup {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+.sc-hover-popup::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -20px;
+    width: 25px;
+}
+
+.sc-hover-popup.sc-popup-flip,
+.sc-hover-popup.sc-popup-left,
+.sc-course-card-wrapper .sc-hover-popup.sc-popup-flip,
+.sc-course-card-wrapper .sc-hover-popup.sc-popup-left {
+    left: auto !important;
+    right: calc(100% + 15px) !important;
+    transform: translateX(-10px);
+}
+
+.sc-hover-popup.sc-popup-flip::after,
+.sc-hover-popup.sc-popup-left::after,
+.sc-course-card-wrapper .sc-hover-popup.sc-popup-flip::after,
+.sc-course-card-wrapper .sc-hover-popup.sc-popup-left::after {
+    left: auto !important;
+    right: -20px !important;
+}
+
+.sc-hover-popup.sc-popup-flip::before,
+.sc-hover-popup.sc-popup-left::before,
+.sc-course-card-wrapper .sc-hover-popup.sc-popup-flip::before,
+.sc-course-card-wrapper .sc-hover-popup.sc-popup-left::before {
+    left: auto !important;
+    right: -8px !important;
+    border-left: none !important;
+    border-bottom: none !important;
+    border-right: 1px solid var(--ep-card-border) !important;
+    border-top: 1px solid var(--ep-card-border) !important;
+}
+
+.sc-hover-popup.sc-popup-flip:hover,
+.sc-hover-popup.sc-popup-left:hover {
+    transform: translateX(0);
+}
+
+.sc-popup-header {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--ep-card-border) !important;
+}
+
+.sc-popup-title {
+    font-size: 1.05rem;
+    color: var(--ep-text) !important;
+    line-height: 1.4;
+    margin-bottom: 6px !important;
+}
+
+.sc-popup-badge {
+    display: inline-block;
+    background: var(--ep-primary) !important;
+    color: var(--ep-btn-text) !important;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+}
+
+.sc-popup-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--ep-card-border) !important;
+}
+
+.sc-popup-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--ep-text-muted) !important;
+}
+
+.sc-popup-meta-item .fa {
+    width: 16px;
+    text-align: center;
+    color: var(--ep-primary) !important;
+    font-size: 0.9rem;
+}
+
+.sc-popup-desc {
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.sc-popup-desc-text {
+    line-height: 1.5;
+    font-size: 0.88rem;
+}
+
+.sc-popup-btn {
+    background: var(--ep-btn-bg) !important;
+    border-color: var(--ep-btn-bg) !important;
+    color: var(--ep-btn-text) !important;
+    font-weight: 600;
+}
+
+.sc-popup-btn:hover {
+    background: var(--ep-btn-hover-bg) !important;
+    border-color: var(--ep-btn-hover-bg) !important;
+}
+
+/* ── Responsive Adaptations ── */
+@media (max-width: 991px) {
+    .sc-hover-popup {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .sc-program-card {
+        flex-direction: column !important;
+    }
+    .sc-program-img-container {
+        width: 100%;
+        height: 180px;
+        min-height: 180px;
+    }
+}

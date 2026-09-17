@@ -38,6 +38,13 @@ $functions = [
         'description' => 'Return list of programs that match the search parameters.',
         'type' => 'read',
     ],
+    'enrol_programs_get_catalogue_programs' => [
+        'classname' => enrol_programs\external\get_catalogue_programs::class,
+        'description' => 'Return filtered catalogue programs for AJAX display.',
+        'type' => 'read',
+        'ajax' => true,
+        'loginrequired' => true,
+    ],
     'enrol_programs_get_program_allocations' => [
         'classname' => enrol_programs\external\get_program_allocations::class,
         'description' => 'Return list of program allocations for given programid and optional userids.',
