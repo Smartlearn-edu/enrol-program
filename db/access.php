@@ -47,6 +47,16 @@ $capabilities = [
         ],
     ],
 
+    /* Configure program custom fields. */
+    'enrol/programs:configurecustomfields' => [
+        'riskbitmask' => RISK_SPAM | RISK_CONFIG,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+
     /* Add and update programs. */
     'enrol/programs:edit' => [
         'captype' => 'write',

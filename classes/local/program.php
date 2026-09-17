@@ -146,6 +146,11 @@ final class program {
             }
         }
 
+        // Save custom fields if there are any of them in the form.
+        $handler = \enrol_programs\customfield\program_handler::create();
+        $data->id = $data->id; // Ensure id is set for the handler.
+        $handler->instance_form_save($data, true);
+
         $sequence = [
             'children' => [],
             'type' => content\set::SEQUENCE_TYPE_ALLINANYORDER,
@@ -257,6 +262,10 @@ final class program {
         }
 
         $program = self::update_program_image($data);
+
+        // Save custom fields if there are any of them in the form.
+        $handler = \enrol_programs\customfield\program_handler::create();
+        $handler->instance_form_save($data);
 
         $item = $DB->get_record('enrol_programs_items', ['programid' => $program->id, 'topitem' => 1], '*', MUST_EXIST);
         if ($item->fullname !== $program->fullname) {
@@ -644,6 +653,10 @@ final class program {
         $fs->delete_area_files($context->id, 'enrol_programs', 'image', $program->id);
 
         $DB->delete_records('enrol_programs_programs', ['id' => $program->id]);
+
+        // Delete custom fields data.
+        $handler = \enrol_programs\customfield\program_handler::create();
+        $handler->delete_instance($program->id);
 
         self::make_snapshot($program->id, 'delete');
 

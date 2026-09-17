@@ -15,23 +15,26 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Program enrolment plugin upgrade steps.
+ * Custom fields management page for programs.
  *
  * @package    enrol_programs
- * @copyright  2022 Open LMS (https://www.openlms.net/)
- * @author     Petr Skoda
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+use enrol_programs\customfield\program_handler;
+use core_customfield\output\management;
 
-/** @var stdClass $plugin */
+require('../../../config.php');
+require_once($CFG->libdir . '/adminlib.php');
 
-$plugin->version   = 2023051516;
-$plugin->requires  = 2022112802.00; // 4.1.2 (Build: 20230313)
-$plugin->component = 'enrol_programs';
-$plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = 'v2.0';
-$plugin->supported = [401, 402];
+admin_externalpage_setup('program_customfield');
 
-$plugin->dependencies = ['local_openlms' => 2023051500];
+$output = $PAGE->get_renderer('core_customfield');
+$handler = program_handler::create();
+$outputpage = new management($handler);
+
+echo $output->header(),
+     $output->heading(get_string('customfields', 'enrol_programs')),
+     $output->render($outputpage),
+     $output->footer();

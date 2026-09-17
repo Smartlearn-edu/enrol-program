@@ -25,6 +25,9 @@ namespace enrol_programs\local\form;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class program_update extends \local_openlms\dialog_form {
+    /** @var \enrol_programs\customfield\program_handler */
+    protected $handler;
+
     protected function definition() {
         global $CFG;
 
@@ -63,9 +66,24 @@ final class program_update extends \local_openlms\dialog_form {
         $mform->addElement('hidden', 'id');
         $mform->setType('id', PARAM_INT);
 
+        // Add custom fields to the form.
+        $this->handler = \enrol_programs\customfield\program_handler::create();
+        $this->handler->instance_form_definition($mform, $data->id);
+
         $this->add_action_buttons(true, get_string('updateprogram', 'enrol_programs'));
 
+        // Prepare custom fields data.
+        $this->handler->instance_form_before_set_data($data);
+
         $this->set_data($data);
+    }
+
+    /**
+     * Form definition after data has been set.
+     */
+    public function definition_after_data() {
+        $data = $this->_customdata['data'];
+        $this->handler->instance_form_definition_after_data($this->_form, $data->id);
     }
 
     public function validation($data, $files) {
@@ -103,6 +121,9 @@ final class program_update extends \local_openlms\dialog_form {
                 $errors['contextid'] = get_string('error');
             }
         }
+
+        // Validate custom fields.
+        $errors = array_merge($errors, $this->handler->instance_form_validation($data, $files));
 
         return $errors;
     }

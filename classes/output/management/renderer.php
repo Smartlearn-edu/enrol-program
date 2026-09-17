@@ -71,6 +71,20 @@ class renderer extends \plugin_renderer_base {
         $result .= '<dt class="col-3">' . get_string('description') . ':</dt><dd class="col-9">' . $description . '</dd>';
         $result .= '<dt class="col-3">' . get_string('archived', 'enrol_programs') . ':</dt><dd class="col-9">'
             . ($program->archived ? get_string('yes') : get_string('no')) . '<br />';
+
+        // Display custom fields.
+        $handler = \enrol_programs\customfield\program_handler::create();
+        foreach ($handler->get_instance_data($program->id) as $data) {
+            if (!$handler->can_view($data->get_field(), $program->id)) {
+                continue;
+            }
+            $value = $data->export_value();
+            if ($value === null || $value === '') {
+                continue;
+            }
+            $result .= '<dt class="col-3">' . s($data->get_field()->get('name')) . ':</dt>';
+            $result .= '<dd class="col-9">' . $value . '</dd>';
+        }
         $result .= '</dl>';
 
         return $result;
