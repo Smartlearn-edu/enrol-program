@@ -148,7 +148,6 @@ final class program {
 
         // Save custom fields if there are any of them in the form.
         $handler = \enrol_programs\customfield\program_handler::create();
-        $data->id = $data->id; // Ensure id is set for the handler.
         $handler->instance_form_save($data, true);
 
         $sequence = [
@@ -652,11 +651,11 @@ final class program {
         $fs->delete_area_files($context->id, 'enrol_programs', 'description', $program->id);
         $fs->delete_area_files($context->id, 'enrol_programs', 'image', $program->id);
 
-        $DB->delete_records('enrol_programs_programs', ['id' => $program->id]);
-
-        // Delete custom fields data.
+        // Delete custom fields data before deleting program record.
         $handler = \enrol_programs\customfield\program_handler::create();
         $handler->delete_instance($program->id);
+
+        $DB->delete_records('enrol_programs_programs', ['id' => $program->id]);
 
         self::make_snapshot($program->id, 'delete');
 

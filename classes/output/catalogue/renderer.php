@@ -75,24 +75,6 @@ class renderer extends \plugin_renderer_base {
 </div>
 EOT;
 
-        // Display custom fields.
-        $cfhandler = \enrol_programs\customfield\program_handler::create();
-        $cfoutput = '';
-        foreach ($cfhandler->get_instance_data($program->id) as $cfdata) {
-            if (!$cfhandler->can_view($cfdata->get_field(), $program->id)) {
-                continue;
-            }
-            $cfvalue = $cfdata->export_value();
-            if ($cfvalue === null || $cfvalue === '') {
-                continue;
-            }
-            $cfoutput .= '<dt class="col-3">' . s($cfdata->get_field()->get('name')) . ':</dt>';
-            $cfoutput .= '<dd class="col-9">' . $cfvalue . '</dd>';
-        }
-        if ($cfoutput !== '') {
-            $result .= '<dl class="row">' . $cfoutput . '</dl>';
-        }
-
         $top = program::load_content($program->id);
         $totalcredits = $top->get_total_available_credits();
         $totalpoints = $top->get_total_available_points();
@@ -122,6 +104,21 @@ EOT;
             $result .= '<dt class="col-3">' . $pointstitle . ':</dt><dd class="col-9">'
                 . \html_writer::span($pointstext, 'badge badge-warning bg-warning text-dark') . '</dd>';
         }
+
+        // Display custom fields.
+        $cfhandler = \enrol_programs\customfield\program_handler::create();
+        foreach ($cfhandler->get_instance_data($program->id) as $cfdata) {
+            if (!$cfhandler->can_view($cfdata->get_field(), $program->id)) {
+                continue;
+            }
+            $cfvalue = $cfdata->export_value();
+            if ($cfvalue === null || $cfvalue === '') {
+                continue;
+            }
+            $result .= '<dt class="col-3">' . $cfdata->get_field()->get_formatted_name() . ':</dt>';
+            $result .= '<dd class="col-9">' . $cfvalue . '</dd>';
+        }
+
         $result .= '</dl>';
 
         $actions = [];

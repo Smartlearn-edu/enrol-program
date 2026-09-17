@@ -27,8 +27,6 @@ use core_customfield\handler;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class program_handler extends handler {
-
-    // Visibility constants
     /** @var int Field is visible to everyone */
     const VISIBLETOALL = 2;
     /** @var int Field is visible to managers only */
@@ -36,8 +34,23 @@ final class program_handler extends handler {
     /** @var int Field is not visible */
     const NOTVISIBLE = 0;
 
+    /** @var \context|null Context for creation of new items */
+    protected $parentcontext;
+
+    /**
+     * Sets parent context for the program.
+     *
+     * @param \context $context
+     * @return void
+     */
+    public function set_parent_context(\context $context): void {
+        $this->parentcontext = $context;
+    }
+
     /**
      * The current user can configure custom fields on this component.
+     *
+     * @return bool
      */
     public function can_configure(): bool {
         return has_capability('enrol/programs:configurecustomfields', $this->get_configuration_context());
@@ -45,6 +58,10 @@ final class program_handler extends handler {
 
     /**
      * The current user can edit custom fields on the given program.
+     *
+     * @param field_controller $field
+     * @param int $instanceid
+     * @return bool
      */
     public function can_edit(field_controller $field, int $instanceid = 0): bool {
         return has_capability('enrol/programs:edit', $this->get_instance_context($instanceid));
@@ -52,6 +69,10 @@ final class program_handler extends handler {
 
     /**
      * The current user can view custom fields on the given program.
+     *
+     * @param field_controller $field
+     * @param int $instanceid
+     * @return bool
      */
     public function can_view(field_controller $field, int $instanceid): bool {
         $visibility = $field->get_configdata_property('visibility');
@@ -68,6 +89,8 @@ final class program_handler extends handler {
 
     /**
      * Context that should be used for new categories created by this handler.
+     *
+     * @return \context
      */
     public function get_configuration_context(): \context {
         return \context_system::instance();
@@ -75,6 +98,8 @@ final class program_handler extends handler {
 
     /**
      * URL for configuration of the fields on this handler.
+     *
+     * @return \moodle_url
      */
     public function get_configuration_url(): \moodle_url {
         return new \moodle_url('/enrol/programs/management/customfield.php');
@@ -82,22 +107,32 @@ final class program_handler extends handler {
 
     /**
      * Returns the context for the data associated with the given instanceid.
+     *
+     * @param int $instanceid
+     * @return \context
      */
     public function get_instance_context(int $instanceid = 0): \context {
         global $DB;
         if ($instanceid > 0) {
-            $program = $DB->get_record('enrol_programs_programs', ['id' => $instanceid], 'contextid', MUST_EXIST);
-            return \context::instance_by_id($program->contextid);
+            $contextid = $DB->get_field('enrol_programs_programs', 'contextid', ['id' => $instanceid]);
+            if ($contextid) {
+                return \context::instance_by_id($contextid);
+            }
+        }
+        if ($this->parentcontext) {
+            return $this->parentcontext;
         }
         return \context_system::instance();
     }
 
     /**
      * Allows to add custom controls to the field configuration form that will be saved in configdata.
+     *
+     * @param \MoodleQuickForm $mform
+     * @return void
      */
     public function config_form_definition(\MoodleQuickForm $mform): void {
-        $mform->addElement('header', 'program_handler_header',
-            get_string('customfieldsettings', 'enrol_programs'));
+        $mform->addElement('header', 'program_handler_header', get_string('customfieldsettings', 'enrol_programs'));
         $mform->setExpanded('program_handler_header', true);
 
         $visibilityoptions = [
@@ -105,7 +140,6 @@ final class program_handler extends handler {
             self::VISIBLETOMANAGERS => get_string('customfield_visibletomanagers', 'enrol_programs'),
             self::NOTVISIBLE => get_string('customfield_notvisible', 'enrol_programs'),
         ];
-        $mform->addElement('select', 'configdata[visibility]',
-            get_string('customfield_visibility', 'enrol_programs'), $visibilityoptions);
+        $mform->addElement('select', 'configdata[visibility]', get_string('customfield_visibility', 'enrol_programs'), $visibilityoptions);
     }
 }

@@ -84,7 +84,7 @@ EOT;
             if ($cfvalue === null || $cfvalue === '') {
                 continue;
             }
-            $cfoutput .= '<dt class="col-3">' . s($cfdata->get_field()->get('name')) . ':</dt>';
+            $cfoutput .= '<dt class="col-3">' . $cfdata->get_field()->get_formatted_name() . ':</dt>';
             $cfoutput .= '<dd class="col-9">' . $cfvalue . '</dd>';
         }
         if ($cfoutput !== '') {

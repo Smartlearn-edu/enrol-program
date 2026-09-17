@@ -82,7 +82,7 @@ class renderer extends \plugin_renderer_base {
             if ($value === null || $value === '') {
                 continue;
             }
-            $result .= '<dt class="col-3">' . s($data->get_field()->get('name')) . ':</dt>';
+            $result .= '<dt class="col-3">' . $data->get_field()->get_formatted_name() . ':</dt>';
             $result .= '<dd class="col-9">' . $value . '</dd>';
         }
         $result .= '</dl>';

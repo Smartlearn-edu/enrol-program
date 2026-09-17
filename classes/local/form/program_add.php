@@ -61,6 +61,12 @@ final class program_add extends \local_openlms\dialog_form {
 
         // Add custom fields to the form.
         $this->handler = \enrol_programs\customfield\program_handler::create();
+        if (!empty($data->contextid)) {
+            $context = \context::instance_by_id($data->contextid, IGNORE_MISSING);
+            if ($context) {
+                $this->handler->set_parent_context($context);
+            }
+        }
         $this->handler->instance_form_definition($mform);
 
         $this->add_action_buttons(true, get_string('addprogram', 'enrol_programs'));
@@ -75,6 +81,9 @@ final class program_add extends \local_openlms\dialog_form {
      * Form definition after data has been set.
      */
     public function definition_after_data() {
+        if (!$this->handler) {
+            $this->handler = \enrol_programs\customfield\program_handler::create();
+        }
         $this->handler->instance_form_definition_after_data($this->_form, 0);
     }
 
@@ -108,6 +117,15 @@ final class program_add extends \local_openlms\dialog_form {
         }
 
         // Validate custom fields.
+        if (!$this->handler) {
+            $this->handler = \enrol_programs\customfield\program_handler::create();
+        }
+        if (!empty($data['contextid'])) {
+            $ctx = \context::instance_by_id($data['contextid'], IGNORE_MISSING);
+            if ($ctx) {
+                $this->handler->set_parent_context($ctx);
+            }
+        }
         $errors = array_merge($errors, $this->handler->instance_form_validation($data, $files));
 
         return $errors;
