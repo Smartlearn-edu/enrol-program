@@ -260,57 +260,69 @@ body.enrol-programs-catalogue-fullwidth #page-content {
     cursor: pointer;
 }
 
-/* ── Program Horizontal Cards ── */
+/* ── Program Grid Cards (Course Catalog Style) ── */
 .sc-course-card-wrapper {
     position: relative;
 }
 
-.sc-program-card {
-    flex-direction: row !important;
+.ep-program-grid-card {
     background-color: var(--ep-card-bg) !important;
     border: 1px solid var(--ep-card-border) !important;
     border-radius: var(--ep-radius) !important;
     box-shadow: var(--ep-shadow);
-    transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.25s ease;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.sc-course-card-wrapper:hover .sc-program-card {
-    transform: translateY(-2px);
+.sc-course-card-wrapper:hover .ep-program-grid-card {
+    transform: translateY(-6px);
     border-color: var(--ep-primary) !important;
-    box-shadow: var(--ep-shadow-hover);
+    box-shadow: var(--ep-shadow-hover), 0 0 0 1px var(--ep-primary) !important;
 }
 
-.sc-program-img-container {
-    width: 280px;
-    min-height: 200px;
-    flex-shrink: 0;
-    position: relative;
+.sc-card-img-container {
+    height: 180px;
+    width: 100%;
     overflow: hidden;
-    background-color: rgba(0, 0, 0, 0.03);
+    position: relative;
+    background-color: rgba(0, 0, 0, 0.04);
 }
 
-.sc-program-img-container .sc-card-img {
+html[data-smartlearn-mode="dark"] .sc-card-img-container,
+html[data-bs-theme="dark"] .sc-card-img-container,
+[data-bs-theme="dark"] .sc-card-img-container,
+body.smartlearn-dark .sc-card-img-container {
+    background-color: rgba(0, 0, 0, 0.25);
+}
+
+.sc-card-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.35s ease;
+    transition: transform 0.4s ease;
 }
 
-.sc-course-card-wrapper:hover .sc-program-img-container .sc-card-img {
-    transform: scale(1.04);
+.sc-course-card-wrapper:hover .sc-card-img {
+    transform: scale(1.05);
 }
 
 .ep-card-placeholder {
     width: 100%;
-    height: 100%;
+    height: 180px;
     background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.18) 100%);
+}
+
+.sc-title-clamp {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    height: 2.8em;
+    line-height: 1.4;
+    font-size: 1.05rem;
 }
 
 .ep-program-title {
     color: var(--ep-text) !important;
-    font-size: 1.25rem;
-    font-weight: 700;
-    line-height: 1.35;
     transition: color 0.2s ease;
 }
 
@@ -319,7 +331,7 @@ body.enrol-programs-catalogue-fullwidth #page-content {
 }
 
 .ep-card-meta {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: var(--ep-text-muted) !important;
 }
 
@@ -327,10 +339,10 @@ body.enrol-programs-catalogue-fullwidth #page-content {
     background-color: rgba(0, 0, 0, 0.04);
     border: 1px solid var(--ep-card-border);
     color: var(--ep-text);
-    font-size: 0.82rem;
+    font-size: 0.78rem;
     font-weight: 500;
     border-radius: 6px;
-    padding: 3px 8px;
+    padding: 2px 7px;
 }
 
 [data-bs-theme="dark"] .ep-cf-badges .ep-cf-badge,
@@ -344,10 +356,14 @@ html[data-smartlearn-mode="dark"] .ep-cf-badges .ep-cf-badge {
 }
 
 .sc-desc-container {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.5;
+    font-size: 0.88rem;
+    max-height: 4.5em;
     color: var(--ep-text-muted) !important;
-    line-height: 1.55;
-    font-size: 0.92rem;
-    overflow-y: auto;
 }
 
 .sc-desc-container::-webkit-scrollbar {
@@ -539,16 +555,5 @@ html[data-smartlearn-mode="dark"] .ep-cf-badges .ep-cf-badge {
 @media (max-width: 991px) {
     .sc-hover-popup {
         display: none !important;
-    }
-}
-
-@media (max-width: 768px) {
-    .sc-program-card {
-        flex-direction: column !important;
-    }
-    .sc-program-img-container {
-        width: 100%;
-        height: 180px;
-        min-height: 180px;
     }
 }

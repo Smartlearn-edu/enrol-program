@@ -227,6 +227,7 @@ final class catalogue {
      */
     public function get_programs_card_data(array $programs): array {
         global $DB, $USER, $CFG;
+        require_once($CFG->libdir . '/filelib.php');
 
         if (empty($programs)) {
             return [];

@@ -1,7 +1,7 @@
 {{!
     @template enrol_programs/program_card
 
-    Program card template for catalogue display.
+    Program grid card template matching course catalog style.
 
     Classes required for JS:
     * none
@@ -43,39 +43,39 @@
     }
 }}
 {{#items}}
-<div class="col-12 mb-4">
-    <div class="sc-course-card-wrapper sc-program-wrapper position-relative h-100">
-        <div class="card h-100 sc-program-card border-0 rounded-3 overflow-hidden position-relative d-flex">
-            <a href="{{url}}" class="text-decoration-none text-dark d-block sc-program-img-container sc-card-img-container">
+<div class="col-lg-4 col-md-6 col-sm-12 mb-4 ep-catalog-col">
+    <div class="sc-course-card-wrapper position-relative h-100">
+        <div class="card h-100 ep-program-grid-card border-0 rounded-3 overflow-hidden position-relative d-flex flex-column">
+            <a href="{{url}}" class="text-decoration-none text-dark d-block sc-card-img-container position-relative">
                 {{#hasimage}}
-                <img src="{{imageurl}}" alt="{{name}}" class="sc-card-img h-100 object-fit-cover w-100">
+                <img src="{{imageurl}}" alt="{{name}}" class="sc-card-img">
                 {{/hasimage}}
                 {{^hasimage}}
-                <div class="sc-card-placeholder d-flex align-items-center justify-content-center h-100">
-                    <i class="fa fa-sitemap fa-3x text-muted"></i>
+                <div class="ep-card-placeholder d-flex align-items-center justify-content-center h-100">
+                    <i class="fa fa-sitemap fa-3x text-muted opacity-50"></i>
                 </div>
                 {{/hasimage}}
+                {{#statusbadge}}
+                <div class="position-absolute top-0 end-0 m-2">
+                    {{{statusbadge}}}
+                </div>
+                {{/statusbadge}}
             </a>
             
-            <div class="p-4 d-flex flex-column flex-grow-1">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <a href="{{url}}" class="text-decoration-none text-dark">
-                        <h4 class="card-title fw-bold mb-1 ep-program-title">{{name}}</h4>
-                    </a>
-                    {{#statusbadge}}
-                        <div class="ms-2">{{{statusbadge}}}</div>
-                    {{/statusbadge}}
-                </div>
+            <div class="p-3 d-flex flex-column flex-grow-1">
+                <a href="{{url}}" class="text-decoration-none text-dark">
+                    <h5 class="card-title fw-bold mb-2 sc-title-clamp ep-program-title" title="{{name}}">{{name}}</h5>
+                </a>
                 
-                <div class="d-flex align-items-center flex-wrap gap-3 text-muted mb-2 ep-card-meta" style="font-size: 0.9rem;">
+                <div class="d-flex align-items-center flex-wrap gap-2 text-muted mb-2 ep-card-meta" style="font-size: 0.85rem;">
                     {{#hasitems}}
-                    <span class="me-3"><i class="fa fa-book me-1"></i> {{courses_str}}</span>
+                    <span class="me-2"><i class="fa fa-book me-1"></i> {{courses_str}}</span>
                     {{/hasitems}}
                     {{#hascredits}}
-                    <span class="me-3"><i class="fa fa-graduation-cap me-1"></i> {{credits_str}}</span>
+                    <span class="me-2"><i class="fa fa-graduation-cap me-1"></i> {{credits_str}}</span>
                     {{/hascredits}}
                     {{#haspoints}}
-                    <span class="me-3"><i class="fa fa-star text-warning me-1"></i> {{points_str}}</span>
+                    <span class="me-2"><i class="fa fa-star text-warning me-1"></i> {{points_str}}</span>
                     {{/haspoints}}
                     {{#allocationcompleted}}
                     <span class="text-success"><i class="fa fa-trophy me-1"></i> {{#str}} programstatus_completed, enrol_programs {{/str}}</span>
@@ -83,36 +83,32 @@
                 </div>
 
                 {{#hascustomfields}}
-                <div class="d-flex align-items-center flex-wrap gap-2 mb-3 ep-cf-badges">
+                <div class="d-flex align-items-center flex-wrap gap-1 mb-2 ep-cf-badges">
                     {{#customfields}}
-                    <span class="badge ep-cf-badge px-2 py-1">
+                    <span class="badge ep-cf-badge px-2 py-1" style="font-size: 0.78rem;">
                         <span class="ep-cf-name">{{name}}:</span> <span class="ep-cf-val">{{value}}</span>
                     </span>
                     {{/customfields}}
                 </div>
                 {{/hascustomfields}}
                 
-                <div class="card-text text-muted mb-4 sc-desc-container flex-grow-1" style="height: auto; max-height: 80px;">
+                <div class="card-text text-muted mb-3 sc-desc-container flex-grow-1">
                     {{{description}}}
                 </div>
                 
-                <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <div>
-                        {{#hastags}}
-                        <div class="ep-card-tags d-flex flex-wrap gap-1">
-                            {{#tags}}
-                            <span class="badge bg-secondary text-white">{{name}}</span>
-                            {{/tags}}
-                        </div>
-                        {{/hastags}}
+                <div class="mt-auto pt-2 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="ep-card-tags d-flex flex-wrap gap-1">
+                        {{#tags}}
+                        <span class="badge bg-secondary text-white" style="font-size: 0.72rem;">{{name}}</span>
+                        {{/tags}}
                     </div>
-                    <a href="{{url}}" class="btn {{buttonclass}} rounded-pill sc-view-btn px-4">{{buttontext}}</a>
+                    <a href="{{url}}" class="btn {{buttonclass}} rounded-pill sc-view-btn px-4 btn-sm ms-auto">{{buttontext}}</a>
                 </div>
             </div>
         </div>
 
         {{! ── Hover popup with quick details ── }}
-        <div class="sc-hover-popup rounded-3" style="width: 380px;">
+        <div class="sc-hover-popup rounded-3" style="width: 340px;">
             <div class="sc-popup-header">
                 <h6 class="sc-popup-title fw-bold mb-1">{{name}}</h6>
                 <span class="sc-popup-badge badge">{{#str}} program, enrol_programs {{/str}}</span>
@@ -147,7 +143,7 @@
                 {{/hascustomfields}}
             </div>
 
-            <div class="sc-popup-desc" style="max-height: 180px;">
+            <div class="sc-popup-desc" style="max-height: 160px;">
                 <p class="text-muted mb-0 sc-popup-desc-text">{{popupcontent}}</p>
             </div>
 
