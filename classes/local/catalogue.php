@@ -645,6 +645,24 @@ final class catalogue {
 
         $cfwhere = '';
         if (!empty($this->customfields)) {
+            $fieldoptionsmap = [];
+            if (class_exists('\core_customfield\handler')) {
+                try {
+                    $cfhandler = \core_customfield\handler::get_handler('enrol_programs', 'program');
+                    $categories = $cfhandler->get_categories_with_fields();
+                    foreach ($categories as $cat) {
+                        foreach ($cat->get_fields() as $field) {
+                            $sname = $field->get('shortname');
+                            if ($field->get('type') === 'select' && method_exists($field, 'get_options')) {
+                                $fieldoptionsmap[$sname] = $field->get_options();
+                            }
+                        }
+                    }
+                } catch (\Exception $e) {
+                    unset($e);
+                }
+            }
+
             $cfidx = 0;
             foreach ($this->customfields as $shortname => $values) {
                 if (!is_array($values)) {
@@ -656,19 +674,60 @@ final class catalogue {
                 if (empty($values)) {
                     continue;
                 }
+
+                $intvalues = [];
+                $charvalues = [];
+                foreach ($values as $v) {
+                    if (isset($fieldoptionsmap[$shortname])) {
+                        $opts = $fieldoptionsmap[$shortname];
+                        if (isset($opts[$v]) && $opts[$v] !== '') {
+                            $intvalues[] = (int)$v;
+                            $charvalues[] = (string)$opts[$v];
+                        }
+                        $key = array_search($v, $opts);
+                        if ($key !== false) {
+                            $intvalues[] = (int)$key;
+                        }
+                    }
+                    if (is_numeric($v)) {
+                        $intvalues[] = (int)$v;
+                    }
+                    $charvalues[] = (string)$v;
+                }
+                $intvalues = array_values(array_unique($intvalues));
+                $charvalues = array_values(array_unique($charvalues));
+
+                $conds = [];
                 $cfidx++;
-                [$insql, $inparams] = $DB->get_in_or_equal($values, SQL_PARAMS_NAMED, 'cfv' . $cfidx . '_');
                 $fieldparam = 'cff' . $cfidx;
+                $params[$fieldparam] = $shortname;
+
+                if (!empty($intvalues)) {
+                    [$insql_int, $inparams_int] = $DB->get_in_or_equal($intvalues, SQL_PARAMS_NAMED, 'cfvi' . $cfidx . '_');
+                    $conds[] = "cfd{$cfidx}.intvalue $insql_int";
+                    $params = array_merge($params, $inparams_int);
+                }
+
+                if (!empty($charvalues)) {
+                    [$insql_char, $inparams_char] = $DB->get_in_or_equal($charvalues, SQL_PARAMS_NAMED, 'cfvc' . $cfidx . '_');
+                    $conds[] = "cfd{$cfidx}.charvalue $insql_char";
+                    $params = array_merge($params, $inparams_char);
+                }
+
+                if (empty($conds)) {
+                    continue;
+                }
+
+                $valuecondition = implode(' OR ', $conds);
+
                 $cfwhere .= " AND EXISTS (
                     SELECT 1
                       FROM {customfield_data} cfd{$cfidx}
                       JOIN {customfield_field} cff{$cfidx} ON cff{$cfidx}.id = cfd{$cfidx}.fieldid
                      WHERE cfd{$cfidx}.instanceid = p.id
                        AND cff{$cfidx}.shortname = :{$fieldparam}
-                       AND (cfd{$cfidx}.intvalue $insql OR cfd{$cfidx}.charvalue $insql)
+                       AND ($valuecondition)
                 )";
-                $params[$fieldparam] = $shortname;
-                $params = array_merge($params, $inparams);
             }
         }
 
